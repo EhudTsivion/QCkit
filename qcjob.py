@@ -42,6 +42,8 @@ class QCjob:
 
         self.comment = comment
 
+        self.job_done = False
+
         # set number of openmp threads
         if not threads:
 
@@ -49,7 +51,7 @@ class QCjob:
                 self.threads = os.environ['OMP_NUM_THREADS']
 
             except KeyError:
-                self.threads = 1
+                self.threads = str(1)
 
         # set automatic job name
         if not job_name:
@@ -88,7 +90,7 @@ class QCjob:
                                      basis=self.basis,
                                      comment=self.comment)
 
-        with open(self.job_name + ".in", 'w') as f:
+        with open(self.input_file, 'r') as f:
 
             f.write(content)
 
@@ -96,5 +98,8 @@ class QCjob:
 
         self.write_file()
 
-        subprocess.call(['qchem', '-nt', self.threads, self.input_file])
-        
+        with open(self.output_file, 'a') as f:
+            subprocess.call(['qchem', '-nt', self.threads, self.input_file], stdout=f)
+
+        self.job_done = True
+
