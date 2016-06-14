@@ -5,6 +5,7 @@ import string
 from molecule import Molecule
 from input_template import template_text
 import subprocess
+import logging
 
 
 class QCjob:
@@ -17,14 +18,10 @@ class QCjob:
                  molden_format='true',
                  threads=None,
                  job_name=None,
-                 rems={}):
+                 rems={},
+                 other_things={}):
 
-        if isinstance(molecule, Molecule):
-
-            self.molecule = molecule
-
-        else:
-            raise TypeError('please enter an instance of a Molecule object')
+        self.molecule = molecule
 
         self.exchange = exchange
 
@@ -44,6 +41,8 @@ class QCjob:
 
         self.job_done = False
 
+        self.other_things = other_things
+
         # set number of openmp threads
         if not threads:
 
@@ -53,14 +52,28 @@ class QCjob:
             except KeyError:
                 self.threads = str(1)
 
+        else:
+            self.threads = threads
+
         # set automatic job name
         if not job_name:
             self.job_name = 'qc-' + datetime.datetime.now().strftime('%Y-%m-%d-') \
-                            + str(random.randint(1000, 9999))
+                            + str(random.randint(10000, 99999))
+
+        else:
+            self.job_name = job_name
 
         self.input_file = self.job_name + '.in'
 
         self.output_file = self.job_name + '.qchem'
+
+        # logging
+        logging.getLogger('qcrun')
+
+        logging.info('Initialized new Q-Chem job')
+
+        # write the file
+        self.write_file()
 
     def write_file(self):
         """
@@ -76,8 +89,15 @@ class QCjob:
         rem_text = str()
 
         if self.extra_rems:
-            for key, value in self.extra_rems.iteritems():
-                rem_text += '{} {}'.format(key, value)
+            for key, value in self.extra_rems.items():
+                rem_text += '{} {}\n'.format(key, value)
+
+        things_text = " "
+
+        if self.other_things:
+            for key, value in self.other_things.items():
+                things_text += '${}\n{}\n$end\n'.format(key, value)
+
 
         # fill the template
         content = content.substitute(charge=self.charge,
@@ -88,18 +108,44 @@ class QCjob:
                                      molden_format=self.molden_format,
                                      other_rems=rem_text,
                                      basis=self.basis,
-                                     comment=self.comment)
+                                     comment=self.comment,
+                                     other_things=things_text)
 
-        with open(self.input_file, 'r') as f:
+        with open(self.input_file, 'w') as f:
 
             f.write(content)
 
-    def run(self):
+    def add_rem(self, key, value):
+        """
+        remove rem value from extera rems
+
+        :param value:
+        :return:
+        """
+        self.extra_rems[key] = value
 
         self.write_file()
 
-        with open(self.output_file, 'a') as f:
-            subprocess.call(['qchem', '-nt', self.threads, self.input_file], stdout=f)
+    def rm_rem(self, key):
+        """
+        add a rem value to input file
+
+        :return:
+        """
+        self.extra_rems.pop(key, None)
+
+    def run(self, save=None):
+
+        self.write_file()
+
+        if save == 0:
+
+            subprocess.call(['qchem', '-nt', self.threads, self.input_file, self.output_file])
+
+        # we assume that for aimd runs the default is to save
+        elif save == 1 or self.job_type.lower() == "aimd":
+
+            subprocess.call(['qchem', '-save', '-nt',
+                             self.threads, self.input_file, self.output_file, self.job_name])
 
         self.job_done = True
-

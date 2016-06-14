@@ -3,15 +3,13 @@ import subprocess as sp
 import tempfile
 import copy
 import os
-import sys
 
 import molden_parser
 import physical_constants as const
 from atom import Atom
 import logging
 
-logger = logging.getLogger('QCkit')
-
+log = logging.getLogger()
 
 class Molecule(object):
     """
@@ -96,7 +94,7 @@ class Molecule(object):
         if min_num < 1:
             raise ValueError("atom index {} is smaller than 1".format(min_num))
 
-        logger.debug('rotate atoms around the axis which goes through: '
+        log.debug('rotate atoms around the axis which goes through: '
         '\natom {}: {}\natom {}: {}\nby {} degrees/radians'.format(atom_num1, self.atoms[atom_num1],
                                                                    atom_num2, self.atoms[atom_num1],
                                                                    angle))
@@ -191,7 +189,7 @@ class Molecule(object):
         if min_num < 1:
             raise ValueError("atom index {} is smaller than 1".format(min_num))
 
-        logger.debug('move atoms along the axis which goes through: '
+        log.debug('move atoms along the axis which goes through: '
         "\natom {}: {}\natom {}: {}\nby {} Bohr/Angstroms".format(atom_num1, self.atoms[atom_num1],
                                                                   atom_num2, self.atoms[atom_num1],
                                                                   distance))
@@ -271,7 +269,7 @@ class Molecule(object):
         counter = 0
 
         for atom in self.atoms:
-            atom.coordinates = new_positions[counter]
+            atom.coords = new_positions[counter]
             counter += 1
 
     @property
@@ -394,7 +392,7 @@ class Molecule(object):
             raise ValueError('Cannot split molecule at atom number {} - '
                              'not enough atoms'.format(point_list[-1]))
 
-        logger.debug('splitting the molecule at atoms number: {}'.format(point_list))
+        log.debug('splitting the molecule at atoms number: {}'.format(point_list))
 
         molecule_counter = 0
 
@@ -520,7 +518,7 @@ class Molecule(object):
                 output += "vibration {}\n".format(mode_counter)
                 output += mode.motion_print
 
-            logging.info('Warning - intensities are not really implemented')
+            log.info('Warning - intensities are not really implemented')
             output += "[INT]\n"
             for mode in self.normal_modes:
                 output += "1.0\n".format(mode_counter)
@@ -563,7 +561,7 @@ class Molecule(object):
         else:
             raise ValueError("units requested \"{}\" not recognized".format(units))
 
-        logging.info('writing geometry in {} units'.format(units))
+        log.info('writing geometry in {} units'.format(units))
 
         for atom in self.atoms:
             xyz_text += "{:>5} {:10f} {:10f} {:10f}\n" \
@@ -618,7 +616,7 @@ class Molecule(object):
         f.write(file_text)
         f.close()
 
-        logging.info('write the file {} to directory {}'.format(file_name, os.getcwd()))
+        log.info('write the file {} to directory {}'.format(file_name, os.getcwd()))
 
     def get_fragment(self, atom_numbers):
         """
@@ -733,7 +731,7 @@ def from_xyz(file_name):
 
     f = open(file_name)
 
-    logging.info('parsing xyz file {}'.format(file_name))
+    log.info('parsing xyz file {}'.format(file_name))
 
     text = f.readlines()
 
@@ -741,6 +739,7 @@ def from_xyz(file_name):
     atom_counter = 0
     atom_number = -1
     skip_line = False
+
 
     for line in text:
         line = line.strip().split()
@@ -757,7 +756,7 @@ def from_xyz(file_name):
                 atom_number = int(line[0])
                 read_flag = True
                 skip_line = True
-                logging.info('xyz file contains {} atoms'.format(atom_number))
+                log.info('xyz file contains {} atoms'.format(atom_number))
 
         elif read_flag:
             atom_counter += 1

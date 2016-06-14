@@ -54,7 +54,7 @@ class Atom(object):
 
     @coords.setter
     def coords(self, new_coord):
-        self._xyz = new_coord
+        self._xyz = np.copy(new_coord)
 
     @property
     def atomic_number(self):
