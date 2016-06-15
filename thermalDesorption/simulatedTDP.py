@@ -1,4 +1,4 @@
-from QCkit.thermalDesorption.mdjob import MDjob
+from thermalDesorption.mdjob import MDjob
 import datetime
 import random
 import logging as log
@@ -18,7 +18,6 @@ class TPD:
                  molecule,
                  basis,
                  exchange,
-                 threads,
                  high_T,
                  low_T,
                  temp_advance,
@@ -27,6 +26,7 @@ class TPD:
                  nh_timescale,
                  time_step,
                  aimd_steps,
+                 threads=None,
                  tpd_job_name=None):
 
         self.low_temperature = low_T
@@ -101,6 +101,8 @@ class TPD:
                                                                            self.high_temperature))
         log.info("advancing with steps of {} K".format(self.temp_advance))
 
+        log.info("using {} thermostat".format(job.rems["aimd_thermostat"]))
+
         job.run()
 
         scr_parser = MdScratchParser(self.tpd_job_name)
@@ -130,6 +132,8 @@ class TPD:
             job.set_velocities(scr_parser.get_velocities())
 
             job.molecule.positions = scr_parser.get_positions()*physical_constants.angstrom_to_bohr
+
+            job.change_temperature(temp)
 
             job.run()
 

@@ -35,7 +35,7 @@ class QCjob:
 
         self.multiplicity = molecule.multiplicity
 
-        self.extra_rems = rems
+        self.rems = rems
 
         self.comment = comment
 
@@ -88,8 +88,8 @@ class QCjob:
         # generate text for additional rem parameters
         rem_text = str()
 
-        if self.extra_rems:
-            for key, value in self.extra_rems.items():
+        if self.rems:
+            for key, value in self.rems.items():
                 rem_text += '{} {}\n'.format(key, value)
 
         things_text = " "
@@ -122,7 +122,7 @@ class QCjob:
         :param value:
         :return:
         """
-        self.extra_rems[key] = value
+        self.rems[key] = value
 
         self.write_file()
 
@@ -132,7 +132,7 @@ class QCjob:
 
         :return:
         """
-        self.extra_rems.pop(key, None)
+        self.rems.pop(key, None)
 
     def run(self, save=None):
 

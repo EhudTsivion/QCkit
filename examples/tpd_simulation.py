@@ -1,6 +1,5 @@
-from QCkit import molecule
-from QCkit.thermalDesorption import simulatedTDP
-import multiprocessing
+import molecule
+from thermalDesorption import simulatedTDP
 
 tiocatMg = molecule.from_xyz('./geometries/hydrogen_dimer.xyz')
 
@@ -18,4 +17,4 @@ simulatedTDP.TPD(molecule=tiocatMg,
                  nh_length=3,
                  nh_timescale=45,
                  time_step=10,
-                 aimd_steps=100)
+                 aimd_steps=20)
