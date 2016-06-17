@@ -11,7 +11,7 @@
 # GNU Lesser General Public License for more details.
 
 import numpy as np
-import physical_constants as constants
+import QCkit.physical_constants as constants
 
 
 class Atom(object):

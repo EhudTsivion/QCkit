@@ -1,5 +1,4 @@
-import qcjob
-
+import QCkit.qcjob as qcjob
 
 class MDjob(qcjob.QCjob):
 
@@ -21,6 +20,24 @@ class MDjob(qcjob.QCjob):
 
         # add new temperature:
         self.add_rem("aimd_temp", str(new_temperature))
+
+    @property
+    def temperatures_list(self):
+        """
+        Return a list of all instantaneous temperatures
+        during the simulation
+        """
+
+        return self.output_parser.temperature_list
+
+    @property
+    def trajectory(self):
+        """
+        Return a list of all instantaneous temperatures
+        during the simulation
+        """
+
+        return self.aimd_scrach_parser.trajectory
 
 
 

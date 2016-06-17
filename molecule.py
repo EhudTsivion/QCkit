@@ -3,13 +3,13 @@ import subprocess as sp
 import tempfile
 import copy
 import os
-
-import molden_parser
-import physical_constants as const
-from atom import Atom
 import logging
 
+import QCkit.physical_constants as const
+from QCkit.atom import Atom
+
 log = logging.getLogger()
+
 
 class Molecule(object):
     """
@@ -52,7 +52,7 @@ class Molecule(object):
 
         :param new_atom:
         :return: adds the atom to the atom list of the molecule
-        """
+         """
 
         if not self._atoms:
             self._atoms = []

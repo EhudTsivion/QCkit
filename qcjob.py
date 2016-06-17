@@ -2,10 +2,12 @@ import os
 import datetime
 import random
 import string
-from molecule import Molecule
-from input_template import template_text
 import subprocess
 import logging
+
+from QCkit.input_template import template_text
+from QCkit.outputParser import OutputParser
+from QCkit.thermalDesorption.mdScratchParser import MdScratchParser
 
 
 class QCjob:
@@ -22,25 +24,21 @@ class QCjob:
                  other_things={}):
 
         self.molecule = molecule
-
         self.exchange = exchange
-
         self.basis = basis
-
         self.job_type = job_type
-
         self.molden_format = molden_format
-
         self.charge = molecule.charge
-
         self.multiplicity = molecule.multiplicity
-
         self.rems = rems
-
         self.comment = comment
-
         self.job_done = False
+        self.output_parser = None
+        self.failed = None
+        self.aimd_scrach_parser = None
 
+        # those "other_things" is for stuff like
+        # $basis or $opt etc.
         self.other_things = other_things
 
         # set number of openmp threads
@@ -98,7 +96,6 @@ class QCjob:
             for key, value in self.other_things.items():
                 things_text += '${}\n{}\n$end\n'.format(key, value)
 
-
         # fill the template
         content = content.substitute(charge=self.charge,
                                      multiplicity=self.multiplicity,
@@ -148,4 +145,13 @@ class QCjob:
             subprocess.call(['qchem', '-save', '-nt',
                              self.threads, self.input_file, self.output_file, self.job_name])
 
+        self.output_parser = OutputParser(self.output_file)
+
+        if self.job_type.lower() == "aimd":
+            self.aimd_scrach_parser = MdScratchParser(self.job_name)
+
         self.job_done = True
+
+        self.failed = self.output_parser.job_failed
+
+

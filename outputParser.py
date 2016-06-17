@@ -12,7 +12,8 @@ class OutputParser:
 
             self.content = f.readlines()
 
-    def get_temperatures(self):
+    @property
+    def temperature_list(self):
 
         """
         extract the temperatures from each md simulation step
@@ -21,11 +22,28 @@ class OutputParser:
         :return:
         """
 
-        temp_array = []
+        temp_list = []
 
         for line in self.content:
 
             if "Instantaneous Temperature" in line:
-                temp_array.append(str(line.split()[-2]))
+                temp_list.append(str(line.split()[-2]))
 
-        return "\n".join(temp_array) + "\n"
+        return "\n".join(temp_list) + "\n"
+
+    @property
+    def job_failed(self):
+
+        """
+
+        :return: True if job didn't finish properly, otherwise False
+        """
+
+        flag = True
+
+        for line in self.content:
+
+            if "Thank you very much for using Q-Chem.  Have a nice day" in line:
+                flag = False
+
+        return flag

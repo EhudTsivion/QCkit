@@ -79,7 +79,8 @@ class MdScratchParser:
 
         return np.array(positions, dtype=np.float64)
 
-    def append_trj_data(self, first_step=False):
+    @property
+    def trajectory(self, first_step=False):
         """
         collect data from aimd scratch and create trj file
 
@@ -90,23 +91,33 @@ class MdScratchParser:
 
             trj_data = str(f.read())
 
-        with open(self.job_name + ".trj", 'a') as f:
+        return trj_data
 
-            f.write(trj_data)
+        # # create T and V file
+        # with open(self.aimd_scratch + "/TandV", 'r') as f:
+        #     tandv_data = f.read().splitlines()
+        #
+        # # in case of not first write, remove first line
+        # if not first_step:
+        #     tandv_data.pop(0)
+        #
+        # tandv_data = ' '.join(tandv_data) + '\n'
+        #
+        # with open(self.job_name + ".TandV", 'a') as f:
+        #     f.write('Target Temperature {} K\n'.format(temp))
+        #     f.write(str(tandv_data))
 
-        # create T and V file
-        with open(self.aimd_scratch + "/TandV", 'r') as f:
-            tandv_data = f.read().splitlines()
+    @property
+    def finished_ok(self):
 
-        # in case of not first write, remove first line
-        if not first_step:
-            tandv_data.pop(0)
+        for line in self.content:
 
-        tandv_data = ' '.join(tandv_data) + '\n'
+            if "Have a nice day" in line:
 
-        with open(self.job_name + ".TandV", 'a') as f:
-            f.write(str(tandv_data))
+                return True
 
+            else:
+                return False
 
 
 
