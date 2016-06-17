@@ -121,21 +121,37 @@ class TPD:
 
             job.molecule.positions = scr_parser.get_positions() * physical_constants.angstrom_to_bohr
 
-            self.temperature_file_generator(tempra_list=job.temperatures_list)
+            # self.temperature_file_generator(job.temperatures_list)
+            #
+            # self.trj_file_generator(job.trajectory)
 
-            self.trj_file_generator(job.trajectory)
+            self.scratch_generator(job.temperatures_list, job.trajectory, scr_parser.get_velocities())
 
             if first_run:
                 first_run = False
                 job.rm_rem("aimd_init_veloc")
 
-    def temperature_file_generator(self, tempra_list):
+    def scratch_generator(self, temperature_data, trj_data, velocities):
 
-        with open(self.tpd_job_name + ".tempra", 'a') as f:
-            f.write('Target Temperature {} K\n'.format(self.current_temp))
-            f.write(tempra_list)
-
-    def trj_file_generator(self, trj_data):
+        # generate TRJ file
         with open(self.tpd_job_name + ".trj", 'a') as f:
             # f.write('Target Temperature {} K\n'.format(self.current_temp))
             f.write(trj_data)
+
+        # generate file with temperatures
+        with open(self.tpd_job_name + ".tempra", 'a') as f:
+            f.write('Target Temperature {} K\n'.format(self.current_temp))
+            f.write(temperature_data)
+
+        # since we're interested only in the last couple of lines
+        # the data is now parsed into lines
+        velocities = velocities.splitlines()
+        trj_data = trj_data.splitlines()
+
+        with open(self.tpd_job_name + ".last_pos_vel", 'a') as f:
+
+            f.write('Target Temperature {} K\n'.format(self.current_temp))
+            f.write('Ended Q-Chem aimd run with the following positions and velocities:\n')
+
+            for i in reversed(range(1, self.molecule.atom_count + 1)):
+                f.write('{}          {}\n'.format(trj_data[-1*i], velocities[-1*i]))
