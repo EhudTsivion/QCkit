@@ -48,9 +48,9 @@ class TPD:
                                 + str(random.randint(10000, 99999))
 
         else:
-            # always append date and some random number
-            self.tpd_job_name = tpd_job_name + datetime.datetime.now().strftime('%Y-%m-%d-') \
-                                + str(random.randint(10000, 99999))
+            # always append a random number, because several
+            # jobs with same name can run in parallel
+            self.tpd_job_name = tpd_job_name + str(random.randint(10000, 99999))
 
         log.basicConfig(filename="{}.log".format(self.tpd_job_name),
                         filemode='w',
