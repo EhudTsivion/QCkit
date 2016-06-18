@@ -115,7 +115,7 @@ class TPD:
                 log.info("Q-Chem job failed at temperature {} K".format(self.current_temp))
                 break
 
-            log.info('current simulation duration is {:0.2} fs\n'.format(simulation_time))
+            log.info('current simulation duration is {:0.2} fs\n'.format(float(simulation_time)))
 
             # create a new scratch parser to parse the scratch
             # from $QCSCRATCH/AIMD
@@ -132,8 +132,6 @@ class TPD:
                                    simulation_time)
 
             simulation_time += self.time_step * self.aimd_steps / physical_constants.atomic_unit_of_time_to_femtosec
-
-            print(simulation_time)
 
             if first_run:
                 first_run = False
