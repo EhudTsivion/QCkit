@@ -94,6 +94,8 @@ class TPD:
 
         first_run = True
 
+        simulation_time = 0  # keep record of the time
+
         for temp in range(self.low_temperature,
                           self.high_temperature,
                           self.temp_advance):
@@ -113,6 +115,8 @@ class TPD:
                 log.info("Q-Chem job failed at temperature {} K".format(self.current_temp))
                 break
 
+            log.info('current simulation duration is {:0.2} fs\n'.format(simulation_time))
+
             # create a new scratch parser to parse the scratch
             # from $QCSCRATCH/AIMD
             scr_parser = MdScratchParser(self.tpd_job_name)
@@ -121,18 +125,68 @@ class TPD:
 
             job.molecule.positions = scr_parser.get_positions() * physical_constants.angstrom_to_bohr
 
-            self.scratch_generator(job.temperatures_list, job.trajectory, scr_parser.get_velocities())
+            self.scratch_generator(job.temperatures_list,
+                                   job.trajectory,
+                                   scr_parser.get_velocities(),
+                                   temp,
+                                   simulation_time)
+
+            simulation_time += self.time_step * self.aimd_steps / physical_constants.atomic_unit_of_time_to_femtosec
+
+            print(simulation_time)
 
             if first_run:
                 first_run = False
                 job.rm_rem("aimd_init_veloc")
 
-    def scratch_generator(self, temperature_data, trj_data, velocities):
+    def scratch_generator(self, temperature_data, trj_data, velocities, temperature, sim_time):
 
-        # generate TRJ file
+        # append TRJ data to file
         with open(self.tpd_job_name + ".trj", 'a') as f:
-            # f.write('Target Temperature {} K\n'.format(self.current_temp))
-            f.write(trj_data)
+
+            # counts the steps of the simulation
+            step_counter = 0
+
+            # counts the lines of xyz data which includes:
+            # first line is number of atoms
+            # second line comment
+            # rest of the lines xyz of atoms
+            # total of Natoms + 2 lines ( +1 if you count from 0)
+            lines_counter = 0
+
+            for line in trj_data.splitlines():
+
+                if step_counter >= 1:
+
+                    if lines_counter == 0:
+                        lines_counter += 1
+                        f.write(line + '\n')
+
+                    elif lines_counter == 1:
+                        lines_counter += 1
+                        f.write('T {} K, time {:0.2f} fs\n'.format(temperature, sim_time +
+                                                                 step_counter *
+                                                                 self.time_step /
+                                                                 physical_constants.atomic_unit_of_time_to_femtosec))
+
+                    elif lines_counter % (self.molecule.atom_count + 1) == 0:
+                        lines_counter = 0
+                        step_counter += 1
+                        f.write(line + '\n')
+
+                    else:
+                        lines_counter += 1
+                        f.write(line + '\n')
+
+                # the first xyz data is just a starting
+                # single-point calculation which is of no interest
+                # and is therefore discarded
+                elif step_counter == 0 and lines_counter < self.molecule.atom_count + 1:
+                    lines_counter += 1
+
+                elif step_counter == 0 and lines_counter == self.molecule.atom_count + 1:
+                    lines_counter = 0
+                    step_counter += 1
 
         # generate file with temperatures
         with open(self.tpd_job_name + ".tempra", 'a') as f:
