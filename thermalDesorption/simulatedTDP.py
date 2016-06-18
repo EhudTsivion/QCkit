@@ -50,7 +50,7 @@ class TPD:
         else:
             # always append a random number, because several
             # jobs with same name can run in parallel
-            self.tpd_job_name = tpd_job_name + str(random.randint(10000, 99999))
+            self.tpd_job_name = '{}-{}'.format(tpd_job_name, str(random.randint(10000, 99999))
 
         log.basicConfig(filename="{}.log".format(self.tpd_job_name),
                         filemode='w',
