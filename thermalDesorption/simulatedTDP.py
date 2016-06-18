@@ -4,7 +4,6 @@ import logging as log
 
 from QCkit.thermalDesorption.mdjob import MDjob
 from QCkit import physical_constants
-from QCkit.outputParser import OutputParser
 from QCkit.thermalDesorption.mdScratchParser import MdScratchParser
 
 
@@ -18,8 +17,8 @@ class TPD:
                  molecule,
                  basis,
                  exchange,
-                 high_T,
-                 low_T,
+                 high_temperature,
+                 low_temperature,
                  temp_advance,
                  time_step,
                  aimd_steps,
@@ -28,8 +27,8 @@ class TPD:
                  threads=None,
                  tpd_job_name=None):
 
-        self.low_temperature = low_T
-        self.high_temperature = high_T
+        self.low_temperature = low_temperature
+        self.high_temperature = high_temperature
         self.temp_advance = temp_advance
         self.molecule = molecule
         self.time_step = time_step
@@ -39,12 +38,13 @@ class TPD:
         self.exchange = exchange
         self.thermostat = thermostat
         self.thermostat_timescale = thermostat_timescale
+        self.tpd_job_name = tpd_job_name
 
         self.current_temp = self.low_temperature
 
         if not tpd_job_name:
 
-            self.tpd_job_name = "tpd-qchem-" + datetime.datetime.now().strftime('%Y-%m-%d-') \
+            self.tpd_job_name = "tpd-qchem-" + datetime.datetime.now().strftime('-%Y-%m-%d-') \
                                 + str(random.randint(10000, 99999))
 
         else:
@@ -107,7 +107,7 @@ class TPD:
             job.run()
 
             if not job.failed:
-                log.info('Q-Chem done with {}'.format(self.current_temp))
+                log.info('Q-Chem finished {} K run successfully'.format(self.current_temp))
 
             else:
                 log.info("Q-Chem job failed at temperature {} K".format(self.current_temp))
@@ -120,10 +120,6 @@ class TPD:
             job.set_velocities(scr_parser.get_velocities())
 
             job.molecule.positions = scr_parser.get_positions() * physical_constants.angstrom_to_bohr
-
-            # self.temperature_file_generator(job.temperatures_list)
-            #
-            # self.trj_file_generator(job.trajectory)
 
             self.scratch_generator(job.temperatures_list, job.trajectory, scr_parser.get_velocities())
 
