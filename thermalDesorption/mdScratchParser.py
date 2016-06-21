@@ -88,7 +88,6 @@ class MdScratchParser:
 
         # create trjectory file
         with open(self.aimd_scratch + "/View.xyz", 'r') as f:
-
             trj_data = str(f.read())
 
         return trj_data
@@ -118,6 +117,3 @@ class MdScratchParser:
 
             else:
                 return False
-
-
-

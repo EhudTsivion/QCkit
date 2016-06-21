@@ -14,18 +14,18 @@ class TPD:
     """
 
     def __init__(self,
-                 molecule,
-                 basis,
-                 exchange,
-                 high_temperature,
-                 low_temperature,
-                 temp_advance,
-                 time_step,
-                 aimd_steps,
-                 thermostat_timescale,
-                 thermostat="langevin",
-                 threads=None,
-                 tpd_job_name=None):
+                 molecule,          # the molecule object, contains all the information about the molecule
+                 basis,             # basis set to use
+                 exchange,          # exchange to use (such as B3LYP etc.)
+                 high_temperature,  # maximum temperature of the simulation
+                 low_temperature,   # starting temperature of the simulation
+                 temp_advance,      # change in temperature each simulation step
+                 time_step,         # time step of the MD simulation, in atomic units = 0.0242 fs
+                 aimd_steps,        # number of steps for each AIMD run (one run of each temperature)
+                 thermostat_timescale,      # friction of system with the thermostat head-bath
+                 thermostat="langevin",     # type of thermostat
+                 threads=None,          # number of openmp threads to use. If none then is OMP_NUM_THREADS
+                 tpd_job_name=None):    # name of the job. appears in all related output files.
 
         self.low_temperature = low_temperature
         self.high_temperature = high_temperature
@@ -44,7 +44,7 @@ class TPD:
 
         if not tpd_job_name:
 
-            self.tpd_job_name = "tpd-qchem-" + datetime.datetime.now().strftime('-%Y-%m-%d-') \
+            self.tpd_job_name = "tpd-QChem" + datetime.datetime.now().strftime('-%Y-%m-%d-') \
                                 + str(random.randint(10000, 99999))
 
         else:
@@ -152,10 +152,6 @@ class TPD:
             # total of Natoms + 2 lines ( +1 if you count from 0)
             lines_counter = 0
 
-            temperature_microstep = self.time_step / \
-                                    self.temp_advance / \
-                                    physical_constants.atomic_unit_of_time_to_femtosec
-
             for line in trj_data.splitlines():
 
                 if step_counter >= 1:
@@ -166,7 +162,7 @@ class TPD:
 
                     elif lines_counter == 1:
                         lines_counter += 1
-                        f.write('T {} K, time {:0.2f} fs\n'.format(temperature + step_counter * temperature_microstep, sim_time +
+                        f.write('T {} K, time {:0.2f} fs\n'.format(temperature, sim_time +
                                                                    step_counter *
                                                                    self.time_step /
                                                                    physical_constants.atomic_unit_of_time_to_femtosec))

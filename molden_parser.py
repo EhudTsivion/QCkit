@@ -5,6 +5,7 @@ import logging as log
 import QCkit.molecule as molecule
 from QCkit.atom import Atom
 
+
 # Normal modes stuff is commented out
 
 
@@ -110,9 +111,9 @@ class MoldenIO:
 
         return self._energy
 
-    # @property
-    # def normal_modes(self):
-    #     return self._normal_modes
+        # @property
+        # def normal_modes(self):
+        #     return self._normal_modes
 
 
 def get_atoms(molden_format):

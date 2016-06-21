@@ -16,4 +16,4 @@ simulatedTDP.TPD(molecule=tiocatMg,
                  thermostat="langevin",
                  thermostat_timescale=120,  # fs
                  time_step=60,  # atomic units
-                 aimd_steps=3)     # per step
+                 aimd_steps=3)  # per step

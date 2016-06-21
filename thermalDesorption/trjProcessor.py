@@ -262,7 +262,7 @@ class TrjProcessor:
         x = np.arange(self.data_length)
 
         try:
-            plt.plot(self.temperature_vec, self.h2_metal_distance)
+            plt.plot(self.time_vec, self.h2_metal_distance)
             plt.show()
 
         except ValueError:

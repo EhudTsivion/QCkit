@@ -153,5 +153,3 @@ class QCjob:
         self.job_done = True
 
         self.failed = self.output_parser.job_failed
-
-

@@ -1,5 +1,3 @@
-
-
 class OutputParser:
     """
     class for parsing Q-Chem output
@@ -9,7 +7,6 @@ class OutputParser:
     def __init__(self, output_file):
 
         with open(output_file, 'r') as f:
-
             self.content = f.readlines()
 
     @property

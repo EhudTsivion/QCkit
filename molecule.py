@@ -95,9 +95,9 @@ class Molecule(object):
             raise ValueError("atom index {} is smaller than 1".format(min_num))
 
         log.debug('rotate atoms around the axis which goes through: '
-        '\natom {}: {}\natom {}: {}\nby {} degrees/radians'.format(atom_num1, self.atoms[atom_num1],
-                                                                   atom_num2, self.atoms[atom_num1],
-                                                                   angle))
+                  '\natom {}: {}\natom {}: {}\nby {} degrees/radians'.format(atom_num1, self.atoms[atom_num1],
+                                                                             atom_num2, self.atoms[atom_num1],
+                                                                             angle))
 
         # correct the atom numbering to start from 0
         # since python uses C numbering, which starts at 0 and not 1
@@ -190,9 +190,9 @@ class Molecule(object):
             raise ValueError("atom index {} is smaller than 1".format(min_num))
 
         log.debug('move atoms along the axis which goes through: '
-        "\natom {}: {}\natom {}: {}\nby {} Bohr/Angstroms".format(atom_num1, self.atoms[atom_num1],
-                                                                  atom_num2, self.atoms[atom_num1],
-                                                                  distance))
+                  "\natom {}: {}\natom {}: {}\nby {} Bohr/Angstroms".format(atom_num1, self.atoms[atom_num1],
+                                                                            atom_num2, self.atoms[atom_num1],
+                                                                            distance))
 
         # correct the atom numbering to start from 0
         # since python uses C numbering, which starts at 0 and not 1
@@ -470,7 +470,6 @@ class Molecule(object):
         except OSError:
             print('cannot find JMOL executable')
 
-
     def to_molden_format(self):
         """
         write the molecular data in xyz format
@@ -494,7 +493,7 @@ class Molecule(object):
                         atom.coords[2])
             counter += 1
 
-        #also, add normal modes data
+        # also, add normal modes data
         if self.normal_modes:
             output += "[FREQ]\n"
             for freq in self.normal_modes.frequency_array:
@@ -579,7 +578,6 @@ class Molecule(object):
         else:
             raise Exception('No normal-modes data was assigned for this molecule')
 
-
     def to_file(self, file_name="pyQChem_output", file_format="xyz"):
         """
         writes a file with molecular specification
@@ -637,7 +635,6 @@ class Molecule(object):
 
             fragment._normal_modes = copy.copy(self.normal_modes)
             for nm in fragment._normal_modes:
-
                 # remove unwanted data from original mode data
                 nm.select_coordinates(atom_numbers)
 
@@ -739,7 +736,6 @@ def from_xyz(file_name):
     atom_counter = 0
     atom_number = -1
     skip_line = False
-
 
     for line in text:
         line = line.strip().split()
