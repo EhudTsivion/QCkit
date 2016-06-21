@@ -137,7 +137,7 @@ class TPD:
                 first_run = False
                 job.rm_rem("aimd_init_veloc")
 
-    def scratch_generator(self, temperature_data, trj_data, velocities, temperature, sim_time):
+    def scratch_generator(self, inst_temperature, trj_data, velocities, temperature, sim_time):
 
         # append TRJ data to file
         with open(self.tpd_job_name + ".trj", 'a') as f:
@@ -152,6 +152,10 @@ class TPD:
             # total of Natoms + 2 lines ( +1 if you count from 0)
             lines_counter = 0
 
+            temperature_microstep = self.time_step / \
+                                    self.temp_advance / \
+                                    physical_constants.atomic_unit_of_time_to_femtosec
+
             for line in trj_data.splitlines():
 
                 if step_counter >= 1:
@@ -162,10 +166,10 @@ class TPD:
 
                     elif lines_counter == 1:
                         lines_counter += 1
-                        f.write('T {} K, time {:0.2f} fs\n'.format(temperature, sim_time +
-                                                                 step_counter *
-                                                                 self.time_step /
-                                                                 physical_constants.atomic_unit_of_time_to_femtosec))
+                        f.write('T {} K, time {:0.2f} fs\n'.format(temperature + step_counter * temperature_microstep, sim_time +
+                                                                   step_counter *
+                                                                   self.time_step /
+                                                                   physical_constants.atomic_unit_of_time_to_femtosec))
 
                     elif lines_counter % (self.molecule.atom_count + 1) == 0:
                         lines_counter = 0
@@ -189,7 +193,7 @@ class TPD:
         # generate file with temperatures
         with open(self.tpd_job_name + ".tempra", 'a') as f:
             f.write('Target Temperature {} K\n'.format(self.current_temp))
-            f.write(temperature_data)
+            f.write(inst_temperature)
 
         # since we're interested only in the last couple of lines
         # the data is now parsed into lines
@@ -202,4 +206,4 @@ class TPD:
             f.write('Ended Q-Chem aimd run with the following positions and velocities:\n')
 
             for i in reversed(range(1, self.molecule.atom_count + 1)):
-                f.write('{}          {}\n'.format(trj_data[-1*i], velocities[-1*i]))
+                f.write('{}          {}\n'.format(trj_data[-1 * i], velocities[-1 * i]))
