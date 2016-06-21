@@ -1,5 +1,5 @@
 import numpy as np
-
+import json
 
 class TrjProcessor:
     """
@@ -30,17 +30,16 @@ class TrjProcessor:
         self.h2_metal_distance = None
         self.temperature_vec = None
         self.time_vec = None
+        self.metal_xyz = None  # position of the metal ion
+        self.h2_com_xyz = None  # positions of the H2 center-of-mass
 
-
-        self.data_set = self.parse_trj(trj_file)
+        self.file_name = trj_file
+        self.data_set = self.parse_trj(self.file_name)
         self.metal_index = self.find_metal_index()
         self.hydrogens = self.find_hydrogen_indices()
         self.temperature_vec = self.get_temperature_vec()
         self.time_vec = self.get_time_vec()
-
-
         self.get_distance_from_metal()
-
 
     def parse_trj(self, trj_file):
         """
@@ -162,7 +161,6 @@ class TrjProcessor:
                         distance = np.linalg.norm(pos_1 - pos_2)
 
                         if 0.5 < distance < 1:
-
                             indices.append([i, j])
 
         if not indices:
@@ -175,7 +173,6 @@ class TrjProcessor:
         temperature_vec = np.zeros(self.data_length, dtype=np.float)
 
         for i in range(self.data_length):
-
             temperature_vec[i] = self.data_set[i]['temperature']
 
         return temperature_vec
@@ -206,24 +203,22 @@ class TrjProcessor:
         # an array to hold the center of mass of the hydrogen
         # molecules
 
-        h2_com_xyz = np.zeros((self.data_length, self.hydrogen_number, 3), dtype=np.float)
-        metal_xyz = np.zeros((self.data_length, 3), dtype=np.float)
+        self.h2_com_xyz = np.zeros((self.data_length, self.hydrogen_number, 3), dtype=np.float)
+        self.metal_xyz = np.zeros((self.data_length, 3), dtype=np.float)
         distance_vec = np.zeros((self.data_length, self.hydrogen_number), dtype=np.float)
 
         for i in range(self.data_length):
 
-            metal_xyz[i] = self.data_set[i]['coordinates'][self.metal_index]
+            self.metal_xyz[i] = self.data_set[i]['coordinates'][self.metal_index]
 
             for j in range(self.hydrogen_number):
-
                 a = self.data_set[i]['coordinates'][self.hydrogens[j][0]]
                 b = self.data_set[i]['coordinates'][self.hydrogens[j][1]]
 
-                h2_com_xyz[i][j] = np.true_divide(a + b, 2)
+                self.h2_com_xyz[i][j] = np.true_divide(a + b, 2)
 
         for i in range(self.hydrogen_number):
-
-            distance_vec[:, i] = np.linalg.norm(h2_com_xyz[:, i] - metal_xyz[:], axis=1)
+            distance_vec[:, i] = np.linalg.norm(self.h2_com_xyz[:, i] - self.metal_xyz[:], axis=1)
 
         self.h2_metal_distance = distance_vec
 
@@ -232,6 +227,30 @@ class TrjProcessor:
     @property
     def hydrogen_number(self):
         return len(self.hydrogens)
+
+    def dump_data(self):
+        """
+        writes the analyzed trajectory data as json file
+
+        The data regarding the distance between the H2
+        molecules and the metal ion is dumped. Its shape is:
+        (N, M) where N is the number of H2 molecules and M is the
+        number of steps in the simulation
+
+        the information about the time of the simulation as
+
+        """
+
+        dump_file_name = self.file_name.replace('.trj', '.json')
+
+        dump_data = dict()
+
+        dump_data['simulation_temperature'] =self.temperature_vec.tolist()
+        dump_data['simulation_time'] =self.time_vec.tolist()
+        dump_data['h2_metal_distance'] = self.h2_metal_distance.tolist()
+
+        with open(dump_file_name, 'w') as f:
+            json.dump(dump_data, f)
 
     def plot_h2_metal_distance(self):
         import matplotlib.pyplot as plt
@@ -243,7 +262,7 @@ class TrjProcessor:
         x = np.arange(self.data_length)
 
         try:
-            plt.plot(self.time_vec, self.h2_metal_distance)
+            plt.plot(self.temperature_vec, self.h2_metal_distance)
             plt.show()
 
         except ValueError:
@@ -251,6 +270,7 @@ class TrjProcessor:
 
         return None
 
+
 if __name__ == "__main__":
     trj_data = TrjProcessor('../examples/example_trj.trj')
-    trj_data.plot_h2_metal_distance()
+    trj_data.dump_data()
