@@ -14,25 +14,25 @@ class TPD:
     """
 
     def __init__(self,
-                 molecule,          # the molecule object, contains all the information about the molecule
-                 basis,             # basis set to use
-                 exchange,          # exchange to use (such as B3LYP etc.)
+                 molecule,  # the molecule object, contains all the information about the molecule
+                 basis,  # basis set to use
+                 exchange,  # exchange to use (such as B3LYP etc.)
                  high_temperature,  # maximum temperature of the simulation
-                 low_temperature,   # starting temperature of the simulation
-                 temp_advance,      # change in temperature each simulation step
-                 time_step,         # time step of the MD simulation, in atomic units = 0.0242 fs
-                 aimd_steps,        # number of steps for each AIMD run (one run of each temperature)
-                 thermostat_timescale,      # friction of system with the thermostat head-bath
-                 thermostat="langevin",     # type of thermostat
-                 threads=None,          # number of openmp threads to use. If none then is OMP_NUM_THREADS
+                 low_temperature,  # starting temperature of the simulation
+                 temp_advance,  # change in temperature each simulation step
+                 aimd_step_duration,  # time step of the MD simulation, in atomic units = 0.0242 fs
+                 aimd_num_steps,  # number of steps for each AIMD run (one run of each temperature)
+                 thermostat_timescale,  # friction of system with the thermostat head-bath
+                 thermostat="langevin",  # type of thermostat
+                 threads=None,  # number of openmp threads to use. If none then is OMP_NUM_THREADS
                  tpd_job_name=None):    # name of the job. appears in all related output files.
 
         self.low_temperature = low_temperature
         self.high_temperature = high_temperature
         self.temp_advance = temp_advance
         self.molecule = molecule
-        self.time_step = time_step
-        self.aimd_steps = aimd_steps
+        self.time_step = aimd_step_duration
+        self.aimd_steps = aimd_num_steps
         self.basis = basis
         self.threads = threads
         self.exchange = exchange
