@@ -68,6 +68,9 @@ class TPD:
                         level='INFO',
                         format='')
 
+        if restart:
+            log.info("\n\n{:*^30}".format("RESTART"))
+
         self.run(restart)
 
         log.info("******** Simulation ended")
@@ -94,8 +97,6 @@ class TPD:
                     job_name=self.tpd_job_name,
                     rems=rems)
 
-        if restart:
-            log.info("\n\n{:*^30}".format("RESTART"))
 
         log.info("\n\n{:*^30}".format("new TPD simulation"))
         log.info("\ncomputational details:")
