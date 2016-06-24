@@ -570,11 +570,15 @@ class Molecule(object):
         log.info('writing geometry in {} units'.format(units))
 
         for atom in self.atoms:
-            xyz_text += "{:>5} {:10f} {:10f} {:10f}\n" \
+            xyz_text += "{:>5} {:< 15.10f} {:< 15.10f} {:< 15.10f}\n" \
                 .format(atom.symbol,
                         atom.coords[0] * factor,
                         atom.coords[1] * factor,
                         atom.coords[2] * factor)
+
+        print(atom.coords[0] * factor)
+        print(xyz_text)
+        exit()
 
         return xyz_text
 
