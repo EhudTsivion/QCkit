@@ -1,5 +1,7 @@
 import numpy as np
 import json
+import os
+
 
 class TrjProcessor:
     """
@@ -269,6 +271,85 @@ class TrjProcessor:
             print("The H2 to Metal distance wasn't calculated")
 
         return None
+
+
+def process_all_trj():
+        """
+        parses and dump all TRJ files in a directory
+        """
+
+        for f in os.listdir('.'):
+
+            if f.endswith('.trj'):
+
+                print('Parsing and dumping data from: {}'.format(f))
+                trjp = TrjProcessor(f)
+                trjp.dump_data()
+
+
+def analyze_detachment(thresh=5):
+
+    detachment_time = list()
+
+    for f in os.listdir('.'):
+
+        if f.endswith('.json'):
+
+            # process the json file:
+
+            print('now processing JSON file: {}'.format(f))
+
+            with open(f) as data_file:
+
+                try:
+
+                    data = json.loads(data_file.read())
+                    print('JSON parsing is good for: {}'.format(f))
+
+                except ValueError:
+
+                    print('JSON parsing failed for: {}'.format(f))
+                    continue
+
+            counter = 0
+
+            # find time of detachment
+
+            found = False
+
+            for distance in data['h2_metal_distance']:
+
+                # check distance for each individual h2 molecule
+                for h2_molecule in distance:
+                    # print(h2_molecule)
+                    if h2_molecule >= thresh:
+
+                        detachment_time.append(data['simulation_time'][counter])
+                        found = True
+
+                counter += 1
+
+                if found:
+                    break
+
+    detachment_time = np.array(detachment_time, dtype=float)
+
+    from scipy.stats import norm
+
+    mu, sigma = norm.fit(detachment_time)
+    return mu, sigma
+
+
+def sum_all():
+
+    mu_sigma = list()
+
+    for thresh in np.arange(3.5, 5, 0.1):
+        result = analyze_detachment(thresh=thresh)
+        mu_sigma.append([result[0], result[1]])
+
+    print(mu_sigma)
+
 
 
 if __name__ == "__main__":

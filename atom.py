@@ -28,6 +28,7 @@ class Atom(object):
 
         # make sure chemical symbol has the correct
         # letter-case form
+
         sym = correct_symbol_case(sym)
         self.symbol = str(sym)
 
@@ -35,7 +36,7 @@ class Atom(object):
         self.mass = mass_for_sym(sym)
 
         # verify correctness of input
-        if len(coords) == 3:
+        if np.array(coords, dtype=float).size == 3:
 
             # if units are given in Angstroms, convert to bohr
             if coord_units[0].lower() == "a":

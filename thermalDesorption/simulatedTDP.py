@@ -2,8 +2,10 @@ import datetime
 import random
 import logging as log
 
-from QCkit.thermalDesorption.mdjob import MDjob
+from QCkit.atom import Atom
+from QCkit.molecule import Molecule
 from QCkit import physical_constants
+from QCkit.thermalDesorption.mdjob import MDjob
 from QCkit.thermalDesorption.mdScratchParser import MdScratchParser
 
 
@@ -25,7 +27,9 @@ class TPD:
                  thermostat_timescale,  # friction of system with the thermostat head-bath
                  thermostat="langevin",  # type of thermostat
                  threads=None,  # number of openmp threads to use. If none then is OMP_NUM_THREADS
-                 tpd_job_name=None):    # name of the job. appears in all related output files.
+                 tpd_job_name=None,
+                 velocities=None,
+                 restart=False):  # name of the job. appears in all related output files.
 
         self.low_temperature = low_temperature
         self.high_temperature = high_temperature
@@ -39,6 +43,7 @@ class TPD:
         self.thermostat = thermostat
         self.thermostat_timescale = thermostat_timescale
         self.tpd_job_name = tpd_job_name
+        self.velocities=velocities
 
         self.current_temp = self.low_temperature
 
@@ -48,20 +53,26 @@ class TPD:
                                 + str(random.randint(10000, 99999))
 
         else:
-            # always append a random number, because several
-            # jobs with same name can run in parallel
-            self.tpd_job_name = '{}-{}'.format(tpd_job_name, str(random.randint(10000, 99999)))
+
+            if not restart:
+                # always append a random number, because several
+                # jobs with same name can run in parallel
+                self.tpd_job_name = '{}-{}'.format(tpd_job_name, str(random.randint(10000, 99999)))
+
+            else:
+                # all output is appended
+                self.tpd_job_name = tpd_job_name
 
         log.basicConfig(filename="{}.log".format(self.tpd_job_name),
-                        filemode='w',
+                        filemode='a',
                         level='INFO',
                         format='')
 
-        self.run()
+        self.run(restart)
 
         log.info("******** Simulation ended")
 
-    def run(self):
+    def run(self, restart=False):
 
         rems = {"aimd_thermostat": self.thermostat,
                 "aimd_time_step": self.time_step,
@@ -83,6 +94,9 @@ class TPD:
                     job_name=self.tpd_job_name,
                     rems=rems)
 
+        if restart:
+            log.info("\n\n{:*^30}".format("RESTART"))
+
         log.info("\n\n{:*^30}".format("new TPD simulation"))
         log.info("\ncomputational details:")
         log.info("basis: {}, exchange: {}".format(self.basis, self.exchange))
@@ -92,7 +106,13 @@ class TPD:
 
         log.info("using {} thermostat".format(job.rems["aimd_thermostat"]))
 
-        first_run = True
+        if restart:
+            job.set_velocities(self.velocities)
+            job.rm_rem("aimd_init_veloc")
+            first_run = False
+
+        else:
+            first_run = True
 
         simulation_time = 0  # keep record of the time
 
@@ -121,8 +141,10 @@ class TPD:
             # from $QCSCRATCH/AIMD
             scr_parser = MdScratchParser(self.tpd_job_name)
 
+            # update velocities for next AIMD run
             job.set_velocities(scr_parser.get_velocities())
 
+            # update position for next AIMD run
             job.molecule.positions = scr_parser.get_positions() * physical_constants.angstrom_to_bohr
 
             self.scratch_generator(job.temperatures_list,
@@ -203,3 +225,7 @@ class TPD:
 
             for i in reversed(range(1, self.molecule.atom_count + 1)):
                 f.write('{}          {}\n'.format(trj_data[-1 * i], velocities[-1 * i]))
+
+
+if __name__ == "__main__":
+    pass

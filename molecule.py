@@ -576,10 +576,6 @@ class Molecule(object):
                         atom.coords[1] * factor,
                         atom.coords[2] * factor)
 
-        print(atom.coords[0] * factor)
-        print(xyz_text)
-        exit()
-
         return xyz_text
 
     @property
