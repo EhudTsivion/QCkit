@@ -567,7 +567,7 @@ class Molecule(object):
         else:
             raise ValueError("units requested \"{}\" not recognized".format(units))
 
-        log.info('writing geometry in {} units'.format(units))
+        log.debug('writing geometry in {} units'.format(units))
 
         for atom in self.atoms:
             xyz_text += "{:>5} {:< 15.10f} {:< 15.10f} {:< 15.10f}\n" \
