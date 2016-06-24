@@ -88,7 +88,10 @@ class TPD:
                 "max_scf_cycles": "200",
                 "aimd_langevin_timescale": self.thermostat_timescale}
 
-        rems.update(self.extra_rems)
+        # if extra_rems are specified
+        # add them to these rems
+        if self.extra_rems:
+            rems.update(self.extra_rems)
 
         # I think this MDjob thing is
         # probably unnecessary
