@@ -201,18 +201,18 @@ class TrjProcessor:
         # this is important for parsing restart jobs
         # were time goes back
 
-        t0 = time_vec[0]
-        t1 = time_vec[1]
-        t2 = time_vec[2]
+        flag = False
+
         for i in range(2, self.data_length):
 
-            t1 = time_vec[i - 1]
-            t2 = time_vec[i]
+            diff = time_vec[i - 1] - time_vec[i - 2]
 
-            diff = t1 - t0
+            if time_vec[i] - time_vec[i - 1] < 0:
+                time_vec[i] = '{:0.2f}'.format(time_vec[i - 1] + diff)
+                flag = True
 
-            if t2 - t1 > 0:
-                t2 = t1 + diff
+        if flag:
+            print('found possible restart job')
 
         return time_vec
 
