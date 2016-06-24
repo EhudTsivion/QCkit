@@ -197,7 +197,6 @@ class TrjProcessor:
 
             time_vec[i] = self.data_set[i]['time']
 
-
         # validates that time actually advances
         # this is important for parsing restart jobs
         # were time goes back
@@ -212,7 +211,7 @@ class TrjProcessor:
 
             diff = t1 - t0
 
-            if t2 - t1 < 0:
+            if t2 - t1 > 0:
                 t2 = t1 + diff
 
         return time_vec
