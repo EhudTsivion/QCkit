@@ -4,6 +4,7 @@ import tempfile
 import copy
 import os
 import logging
+import shutil
 
 import QCkit.physical_constants as const
 from QCkit.atom import Atom
@@ -458,17 +459,23 @@ class Molecule(object):
 
         jmol_script.close()
 
-        try:
+        if shutil.which('jmol'):
 
-            jmol_home = os.environ["JMOLHOME"]
+            sp.call(['jmol', "{}".format(jmol_script.name)])
 
-            sp.call(["java", "-jar", jmol_home + "\Jmol.jar", "-i", "{}".format(jmol_script.name)])
+        else:
 
-        except KeyError:
-            print("JMOLHOME environment variable is not defined. (The thing that points to the root directory of JMOL)")
+            try:
 
-        except OSError:
-            print('cannot find JMOL executable')
+                jmol_home = os.environ["JMOLHOME"]
+
+                sp.call(["java", "-jar", jmol_home + "\Jmol.jar", "-i", "{}".format(jmol_script.name)])
+
+            except KeyError:
+                print("JMOLHOME environment variable is not defined. (The thing that points to the root directory of JMOL)")
+
+            except OSError:
+                print('cannot find JMOL executable')
 
     def to_molden_format(self):
         """
