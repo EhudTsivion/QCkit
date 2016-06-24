@@ -29,7 +29,8 @@ class TPD:
                  threads=None,  # number of openmp threads to use. If none then is OMP_NUM_THREADS
                  tpd_job_name=None,
                  velocities=None,
-                 restart=False):  # name of the job. appears in all related output files.
+                 restart=False,
+                 extra_rems=None):  # name of the job. appears in all related output files.
 
         self.low_temperature = low_temperature
         self.high_temperature = high_temperature
@@ -43,7 +44,8 @@ class TPD:
         self.thermostat = thermostat
         self.thermostat_timescale = thermostat_timescale
         self.tpd_job_name = tpd_job_name
-        self.velocities=velocities
+        self.velocities = velocities
+        self.extra_rems = extra_rems
 
         self.current_temp = self.low_temperature
 
@@ -85,6 +87,8 @@ class TPD:
                 "aimd_print": "1",
                 "max_scf_cycles": "200",
                 "aimd_langevin_timescale": self.thermostat_timescale}
+
+        rems.update(self.extra_rems)
 
         # I think this MDjob thing is
         # probably unnecessary
