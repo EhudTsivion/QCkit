@@ -180,11 +180,40 @@ class TrjProcessor:
         return temperature_vec
 
     def get_time_vec(self):
+        """
+        collected the time data into a vector
+
+        in case of a restart run
+        it will correct the time
+        assuming time-step similar to
+        original run
+
+        :return:
+        """
 
         time_vec = np.zeros(self.data_length, dtype=np.float)
 
-        for i in range(self.data_length):
+        for i in range(0, self.data_length):
+
             time_vec[i] = self.data_set[i]['time']
+
+
+        # validates that time actually advances
+        # this is important for parsing restart jobs
+        # were time goes back
+
+        t0 = time_vec[0]
+        t1 = time_vec[1]
+        t2 = time_vec[2]
+        for i in range(2, self.data_length):
+
+            t1 = time_vec[i - 1]
+            t2 = time_vec[i]
+
+            diff = t1 - t0
+
+            if t2 - t1 < 0:
+                t2 = t1 + diff
 
         return time_vec
 
@@ -349,8 +378,6 @@ def sum_all():
         mu_sigma.append([result[0], result[1]])
 
     print(mu_sigma)
-
-
 
 if __name__ == "__main__":
     trj_data = TrjProcessor('../examples/example_trj.trj')
