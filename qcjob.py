@@ -51,7 +51,7 @@ class QCjob:
                 self.threads = str(1)
 
         else:
-            self.threads = threads
+            self.threads = str(threads)
 
         # set automatic job name
         if not job_name:
