@@ -67,8 +67,8 @@ if __name__ == "__main__":
     TPDrestart(pos_vel_file='./example.last_pos_vel',
                basis="6-31g*",
                exchange="b97-d3",
-               threads=str(4),
-               high_temperature=124,
+               threads=4,
+               high_temperature=128,
                temp_advance=2,  # advance temperature by 2 K
                thermostat="langevin",
                thermostat_timescale=120,  # fs
