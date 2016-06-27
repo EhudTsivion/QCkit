@@ -52,7 +52,7 @@ class TPD:
         if not tpd_job_name:
 
             self.tpd_job_name = "tpd-QChem" + datetime.datetime.now().strftime('-%Y-%m-%d-') \
-                                + str(random.randint(10000, 99999))
+                                + str(random.randint(1000000, 9999999))
 
         else:
 
