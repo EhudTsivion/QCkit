@@ -207,7 +207,7 @@ class TrjProcessor:
 
             diff = time_vec[i - 1] - time_vec[i - 2]
 
-            if time_vec[i] - time_vec[i - 1] < 0:
+            if time_vec[i] - time_vec[i - 1] < 0:  # this is an indicator of new time-keeping due to restart
                 time_vec[i] = '{:0.2f}'.format(time_vec[i - 1] + diff)
                 flag = True
 
@@ -315,7 +315,7 @@ def process_all_trj():
                 trjp.dump_data()
 
 
-def analyze_detachment(thresh=5):
+def analyze_detachment(thresh=5, hist_bins=20):
 
     detachment_time = list()
 
@@ -365,6 +365,11 @@ def analyze_detachment(thresh=5):
     from scipy.stats import norm
 
     mu, sigma = norm.fit(detachment_time)
+
+    import matplotlib.pyplot as plt
+    plt.hist(detachment_time, bins=hist_bins)
+    plt.show()
+
     return mu, sigma
 
 
