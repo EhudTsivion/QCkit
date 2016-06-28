@@ -8,10 +8,9 @@ class TrjProcessor:
     This class processes the TRJ files
     which contain the results from the TPD simulation
 
-    The main products of this process are:
-
-    1. Graphs of the distance between the metal and the hydrogen atoms
-    2. Detection of desorption events
+    The main products of this process is a json
+    file which contained all the important information from
+    the trajectory
 
     How it works:
 
@@ -19,9 +18,14 @@ class TrjProcessor:
     (b) The H2 molecule and metal ion are detected by looking
         at the first XYZ data set.
     (c) The relative position with respect to the metal is calculated
-    (d) Detection of desorption event.
-    (e) Optionally: print report into PDF file
+    (d) the data is dumped into a json file
 
+    once a json data file exists, it can be processes by the
+    JsonData object.
+
+    The reason to make this split, is that processing of the TRJ
+    files take a lot of time, while processing of the JSON files
+    is quick
     """
 
     def __init__(self, trj_file):
@@ -300,6 +304,17 @@ class TrjProcessor:
 
         return None
 
+
+class JsonData:
+    """
+    Reads data from a single json file, containing trajectory data,
+    and processes the information.
+
+    """
+    def __init__(self, json_file):
+
+        self.data = json.loads(data_file.read())
+
     def get_detachment_time(self, thresh=5):
         """
         :param thresh: the distance, in A units, between the hydrogen molecule and the metal ion
@@ -311,18 +326,18 @@ class TrjProcessor:
         counter = 0
         found = None
 
-        for distance in self.data_set['h2_metal_distance']:
+        for distance in self.data['h2_metal_distance']:
 
             for h2_molecule in distance:
                 # print(h2_molecule)
                 if h2_molecule >= thresh:
 
-                    return self.data_set['simulation_time'][counter]
-                    found = True
+                    return self.data['simulation_time'][counter]
 
             counter += 1
 
         return found
+
 
 
 def process_all_trj():
@@ -337,9 +352,6 @@ def process_all_trj():
                 print('Parsing and dumping data from: {}'.format(f))
                 trjp = TrjProcessor(f)
                 trjp.dump_data()
-
-
-
 
 
 def analyze_detachment(thresh=5, hist_bins=20):
@@ -411,5 +423,27 @@ def sum_all():
     print(mu_sigma)
 
 if __name__ == "__main__":
-    trj_data = TrjProcessor('../examples/example_trj.trj')
-    trj_data.dump_data()
+
+    data_list = list()
+
+    for f in os.listdir('.'):
+
+        if f.endswith('.json'):
+
+            print('now processing JSON file: {}'.format(f))
+
+            with open(f) as data_file:
+
+                try:
+
+                    data = json.loads(data_file.read())
+                    data_list.append(data)
+
+                except ValueError:
+
+                    print('JSON parsing failed for: {}'.format(f))
+                    continue
+
+
+
+
