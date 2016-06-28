@@ -300,6 +300,30 @@ class TrjProcessor:
 
         return None
 
+    def get_detachment_time(self, thresh=5):
+        """
+        :param thresh: the distance, in A units, between the hydrogen molecule and the metal ion
+        which is considered as a threshold for detachment.
+
+        :return: a vector of detachment times the trajectory
+        """
+
+        counter = 0
+        found = None
+
+        for distance in self.data_set['h2_metal_distance']:
+
+            for h2_molecule in distance:
+                # print(h2_molecule)
+                if h2_molecule >= thresh:
+
+                    return self.data_set['simulation_time'][counter]
+                    found = True
+
+            counter += 1
+
+        return found
+
 
 def process_all_trj():
         """
@@ -313,6 +337,9 @@ def process_all_trj():
                 print('Parsing and dumping data from: {}'.format(f))
                 trjp = TrjProcessor(f)
                 trjp.dump_data()
+
+
+
 
 
 def analyze_detachment(thresh=5, hist_bins=20):
