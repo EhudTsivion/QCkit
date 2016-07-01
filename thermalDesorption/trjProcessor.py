@@ -2,6 +2,9 @@ import numpy as np
 import json
 import os
 
+from scipy.stats import gamma
+import matplotlib.pyplot as plt
+
 
 class TrjProcessor:
     """
@@ -279,8 +282,8 @@ class TrjProcessor:
 
         dump_data = dict()
 
-        dump_data['simulation_temperature'] =self.temperature_vec.tolist()
-        dump_data['simulation_time'] =self.time_vec.tolist()
+        dump_data['simulation_temperature'] = self.temperature_vec.tolist()
+        dump_data['simulation_time'] = self.time_vec.tolist()
         dump_data['h2_metal_distance'] = self.h2_metal_distance.tolist()
 
         with open(dump_file_name, 'w') as f:
@@ -313,7 +316,10 @@ class JsonData:
     """
     def __init__(self, json_file):
 
-        self.data = json.loads(data_file.read())
+        with open(json_file, 'r') as f:
+            content = f.read()
+
+        self.data = json.loads(content)
 
     def get_detachment_time(self, thresh=5):
         """
@@ -324,20 +330,121 @@ class JsonData:
         """
 
         counter = 0
-        found = None
+
+        # find time of detachment
+
+        found = False
+
+        time = None
 
         for distance in self.data['h2_metal_distance']:
 
+            # check distance for each individual h2 molecule
             for h2_molecule in distance:
-                # print(h2_molecule)
-                if h2_molecule >= thresh:
 
-                    return self.data['simulation_time'][counter]
+                if h2_molecule >= thresh:
+                    time = self.data['simulation_time'][counter]
+                    found = True
 
             counter += 1
 
-        return found
+            if found:
+                break
 
+        return time
+
+
+class DirectoryInformation:
+    """
+    A class for working with all the information in a given directory
+
+    A directory, or folder, contains many json files.
+    The goal of this class is to work will all the information in a
+    particular directory.
+
+    """
+
+    def __init__(self):
+        """
+        Initialize by getting all the information in the directory
+
+        """
+
+        self.info = list()
+
+        print('reading data from all JSON files in directory')
+
+        for f in os.listdir('.'):
+
+            if f.endswith('.json'):
+
+                self.info.append(JsonData(f))
+
+        if not self.info:
+
+            raise IOError('Did not find any valid json pared information')
+
+    def get_detachment_distribution(self, thresh=5, plot=False, bins=15):
+
+        detachment_vec = list()
+
+        for trj_info in self.info:
+
+            time = trj_info.get_detachment_time(thresh=thresh)
+
+            if time:
+
+                detachment_vec.append(trj_info.get_detachment_time(thresh=thresh))
+
+        detachment_vec = np.array(detachment_vec, dtype=np.float)
+
+        if plot:
+
+            plt.hist(detachment_vec, bins=bins)
+            plt.show()
+
+        return detachment_vec
+
+    def fit_gamma_distribution(self, thresh=5):
+
+        #  first get the detachment time
+        dt = self.get_detachment_distribution(thresh=thresh)
+
+        # you need to invert the data - to be able to fit gamma
+        # dt = dt.max() - dt
+
+        fit_alpha, fit_loc, fit_beta = gamma.fit(dt)
+
+        x = np.linspace(0, dt.max(), 100)
+
+        param = gamma.fit(dt)
+
+        pdf_fitted = gamma.pdf(x, *param)
+
+        # normalize
+        pdf_fitted = pdf_fitted / pdf_fitted.max()
+
+        # this is the maximum of the distribution
+        mode = x[pdf_fitted.argmax()]
+
+        # import matplotlib.pyplot as plt
+        #
+        # plt.hist(dt, bins=15)
+        # plt.plot(x, pdf_fitted, color='r')
+        # plt.show()
+
+        values = mode, fit_alpha, fit_loc, fit_beta
+
+        return values
+
+    def test_all_gamma(self, thresh_min=3.5, thresh_max=6.5):
+
+
+        for thresh in np.arange(thresh_min, thresh_max, 0.1):
+
+            print(thresh, self.fit_gamma_distribution(thresh=thresh))
+
+        return None
 
 
 def process_all_trj():
@@ -401,6 +508,8 @@ def analyze_detachment(thresh=5, hist_bins=20):
 
     detachment_time = np.array(detachment_time, dtype=float)
 
+    print(detachment_time)
+
     from scipy.stats import norm
 
     mu, sigma = norm.fit(detachment_time)
@@ -424,26 +533,34 @@ def sum_all():
 
 if __name__ == "__main__":
 
-    data_list = list()
+    di = DirectoryInformation()
+    di.get_detachment_distribution(plot=True)
+    # results = di.test_all_gamma()
 
-    for f in os.listdir('.'):
-
-        if f.endswith('.json'):
-
-            print('now processing JSON file: {}'.format(f))
-
-            with open(f) as data_file:
-
-                try:
-
-                    data = json.loads(data_file.read())
-                    data_list.append(data)
-
-                except ValueError:
-
-                    print('JSON parsing failed for: {}'.format(f))
-                    continue
-
-
-
+    #
+    # dt = di.get_detachment_distribution(thresh=5.5)
+    #
+    # from scipy.stats import gamma
+    #
+    # # dt = dt.max() - dt
+    #
+    # fit_alpha, fit_loc, fit_beta = gamma.fit(dt)
+    #
+    # print(fit_alpha, fit_loc, fit_beta)
+    #
+    # x = np.linspace(0, dt.max(), 100)
+    #
+    # param = gamma.fit(dt)
+    #
+    # pdf_fitted = gamma.pdf(x, *param)
+    # pdf_fitted = pdf_fitted/pdf_fitted.max() * 14
+    #
+    # mode = x[pdf_fitted.argmax()]
+    # print(mode)
+    #
+    # import matplotlib.pyplot as plt
+    #
+    # plt.hist(dt, bins=15)
+    # plt.plot(x, pdf_fitted, color='r')
+    # plt.show()
 
