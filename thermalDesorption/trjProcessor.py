@@ -321,7 +321,7 @@ class JsonData:
 
         self.data = json.loads(content)
 
-    def get_detachment_time(self, thresh=5):
+    def get_desorption_temperature(self, thresh=5):
         """
         :param thresh: the distance, in A units, between the hydrogen molecule and the metal ion
         which is considered as a threshold for detachment.
@@ -343,7 +343,7 @@ class JsonData:
             for h2_molecule in distance:
 
                 if h2_molecule >= thresh:
-                    time = self.data['simulation_time'][counter]
+                    time = self.data['simulation_temperature'][counter]
                     found = True
 
             counter += 1
@@ -385,25 +385,40 @@ class DirectoryInformation:
             raise IOError('Did not find any valid json pared information')
 
     def get_detachment_distribution(self, thresh=5, plot=False, bins=15):
+        """
+        Obtain the temperatures at which the molecules have desorbed
+        from the metal center, by moving farther than a certain threshold
+        distance.
 
-        detachment_vec = list()
+        You can optionally plot a histogram of the distribution
+
+        :param thresh:
+        :param plot:
+        :param bins:
+        :return:
+        """
+
+        detachment_temperatures = list()
 
         for trj_info in self.info:
 
-            time = trj_info.get_detachment_time(thresh=thresh)
+            time = trj_info.get_desorption_temperature(thresh=thresh)
 
             if time:
 
-                detachment_vec.append(trj_info.get_detachment_time(thresh=thresh))
+                detachment_temperatures.append(trj_info.get_desorption_temperature(thresh=thresh))
 
-        detachment_vec = np.array(detachment_vec, dtype=np.float)
+        detachment_temperatures = np.array(detachment_temperatures, dtype=np.float)
 
         if plot:
 
-            plt.hist(detachment_vec, bins=bins)
+            plt.hist(detachment_temperatures,
+                     range=(0, detachment_temperatures.max()),
+                     bins=bins)
+
             plt.show()
 
-        return detachment_vec
+        return detachment_temperatures
 
     def fit_gamma_distribution(self, thresh=5):
 
@@ -449,7 +464,9 @@ class DirectoryInformation:
 
 def process_all_trj():
         """
-        parses and dump all TRJ files in a directory
+        parses all TRJ files in a directory and dump
+        the information into JSON files
+
         """
 
         for f in os.listdir('.'):
@@ -461,106 +478,9 @@ def process_all_trj():
                 trjp.dump_data()
 
 
-def analyze_detachment(thresh=5, hist_bins=20):
-
-    detachment_time = list()
-
-    for f in os.listdir('.'):
-
-        if f.endswith('.json'):
-
-            # process the json file:
-
-            print('now processing JSON file: {}'.format(f))
-
-            with open(f) as data_file:
-
-                try:
-
-                    data = json.loads(data_file.read())
-                    print('JSON parsing is good for: {}'.format(f))
-
-                except ValueError:
-
-                    print('JSON parsing failed for: {}'.format(f))
-                    continue
-
-            counter = 0
-
-            # find time of detachment
-
-            found = False
-
-            for distance in data['h2_metal_distance']:
-
-                # check distance for each individual h2 molecule
-                for h2_molecule in distance:
-                    # print(h2_molecule)
-                    if h2_molecule >= thresh:
-
-                        detachment_time.append(data['simulation_time'][counter])
-                        found = True
-
-                counter += 1
-
-                if found:
-                    break
-
-    detachment_time = np.array(detachment_time, dtype=float)
-
-    print(detachment_time)
-
-    from scipy.stats import norm
-
-    mu, sigma = norm.fit(detachment_time)
-
-    import matplotlib.pyplot as plt
-    plt.hist(detachment_time, bins=hist_bins)
-    plt.show()
-
-    return mu, sigma
-
-
-def sum_all():
-
-    mu_sigma = list()
-
-    for thresh in np.arange(3.5, 5, 0.1):
-        result = analyze_detachment(thresh=thresh)
-        mu_sigma.append([result[0], result[1]])
-
-    print(mu_sigma)
-
 if __name__ == "__main__":
 
     di = DirectoryInformation()
-    di.get_detachment_distribution(plot=True)
-    # results = di.test_all_gamma()
 
-    #
-    # dt = di.get_detachment_distribution(thresh=5.5)
-    #
-    # from scipy.stats import gamma
-    #
-    # # dt = dt.max() - dt
-    #
-    # fit_alpha, fit_loc, fit_beta = gamma.fit(dt)
-    #
-    # print(fit_alpha, fit_loc, fit_beta)
-    #
-    # x = np.linspace(0, dt.max(), 100)
-    #
-    # param = gamma.fit(dt)
-    #
-    # pdf_fitted = gamma.pdf(x, *param)
-    # pdf_fitted = pdf_fitted/pdf_fitted.max() * 14
-    #
-    # mode = x[pdf_fitted.argmax()]
-    # print(mode)
-    #
-    # import matplotlib.pyplot as plt
-    #
-    # plt.hist(dt, bins=15)
-    # plt.plot(x, pdf_fitted, color='r')
-    # plt.show()
+    di.get_detachment_distribution(plot=True, bins=20, thresh=5.5)
 
