@@ -2,7 +2,7 @@ import numpy as np
 import json
 import os
 
-from scipy.stats import gamma
+from scipy.stats import gamma, norm
 import matplotlib.pyplot as plt
 
 
@@ -384,7 +384,7 @@ class DirectoryInformation:
 
             raise IOError('Did not find any valid json pared information')
 
-    def get_detachment_distribution(self, thresh=5, plot=False, bins=15):
+    def get_desorption_distribution(self, thresh=5, plot=False, bins=15):
         """
         Obtain the temperatures at which the molecules have desorbed
         from the metal center, by moving farther than a certain threshold
@@ -423,7 +423,7 @@ class DirectoryInformation:
     def fit_gamma_distribution(self, thresh=5):
 
         #  first get the detachment time
-        dt = self.get_detachment_distribution(thresh=thresh)
+        dt = self.get_desorption_distribution(thresh=thresh)
 
         # you need to invert the data - to be able to fit gamma
         # dt = dt.max() - dt
@@ -461,6 +461,54 @@ class DirectoryInformation:
 
         return None
 
+    def fit_gaussian(self, desorption_thresh=5, plot=False, bins=15):
+        """
+        Fit a normal distribution to the results
+
+        You can optionally plot the fit of the distribution
+
+        :parameter desorption_thresh: the distance between the metal and the
+        hydrogen molecule from which the molecule is considered as desorbed
+        :parameter plot: a flag to turn on or off the plotting of the results
+        :parameter bins: the number of bins used to plot the histogram
+        :return:
+        """
+
+        #  first get the detachment time
+        dt = self.get_desorption_distribution(thresh=desorption_thresh)
+
+        fit_loc, fit_scale = norm.fit(dt)
+
+        if plot:
+
+            x = np.linspace(0, dt.max(), 100)
+
+            pdf_fitted = norm.pdf(x, fit_loc, fit_scale)
+
+            # normalize
+            pdf_fitted = pdf_fitted # / pdf_fitted.max()
+
+            # this is the maximum of the distribution
+            # mode = x[pdf_fitted.argmax()]
+            #
+            # import matplotlib.pyplot as plt
+            #
+            plt.hist(dt, bins=15, normed=True)
+            plt.plot(x, pdf_fitted, color='r')
+            plt.show()
+
+
+        return fit_loc, fit_scale
+
+
+    def scan_desorption_threshold(self, thresh_min=3.5, thresh_max=6.5):
+
+        for thresh in np.arange(thresh_min, thresh_max, 0.1):
+
+            print(thresh, self.fit_gaussian(desorption_thresh=thresh))
+
+        return None
+
 
 def process_all_trj():
         """
@@ -481,6 +529,6 @@ def process_all_trj():
 if __name__ == "__main__":
 
     di = DirectoryInformation()
-
-    di.get_detachment_distribution(plot=True, bins=20, thresh=5.5)
+    # di.scan_desorption_threshold()
+    di.fit_gaussian(plot=True, desorption_thresh=5.5)
 
