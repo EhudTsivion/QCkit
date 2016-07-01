@@ -104,7 +104,6 @@ class TPD:
                     job_name=self.tpd_job_name,
                     rems=rems)
 
-
         log.info("\n\n{:*^30}".format("new TPD simulation"))
         log.info("\ncomputational details:")
         log.info("basis: {}, exchange: {}".format(self.basis, self.exchange))
