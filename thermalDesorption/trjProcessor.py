@@ -3,7 +3,10 @@ import json
 import os
 
 from scipy.stats import gamma, norm
+from scipy.optimize import minimize
 import matplotlib.pyplot as plt
+
+from QCkit.thermalDesorption import tdpCurve
 
 
 class TrjProcessor:
@@ -201,7 +204,6 @@ class TrjProcessor:
         time_vec = np.zeros(self.data_length, dtype=np.float)
 
         for i in range(0, self.data_length):
-
             time_vec[i] = self.data_set[i]['time']
 
         # validates that time actually advances
@@ -314,6 +316,7 @@ class JsonData:
     and processes the information.
 
     """
+
     def __init__(self, json_file):
 
         with open(json_file, 'r') as f:
@@ -377,11 +380,9 @@ class DirectoryInformation:
         for f in os.listdir('.'):
 
             if f.endswith('.json'):
-
                 self.info.append(JsonData(f))
 
         if not self.info:
-
             raise IOError('Did not find any valid json pared information')
 
     def get_desorption_distribution(self, thresh=5, plot=False, bins=15):
@@ -405,13 +406,11 @@ class DirectoryInformation:
             time = trj_info.get_desorption_temperature(thresh=thresh)
 
             if time:
-
                 detachment_temperatures.append(trj_info.get_desorption_temperature(thresh=thresh))
 
         detachment_temperatures = np.array(detachment_temperatures, dtype=np.float)
 
         if plot:
-
             plt.hist(detachment_temperatures,
                      range=(0, detachment_temperatures.max()),
                      bins=bins)
@@ -454,9 +453,7 @@ class DirectoryInformation:
 
     def test_all_gamma(self, thresh_min=3.5, thresh_max=6.5):
 
-
         for thresh in np.arange(thresh_min, thresh_max, 0.1):
-
             print(thresh, self.fit_gamma_distribution(thresh=thresh))
 
         return None
@@ -480,55 +477,80 @@ class DirectoryInformation:
         fit_loc, fit_scale = norm.fit(dt)
 
         if plot:
-
             x = np.linspace(0, dt.max(), 100)
 
             pdf_fitted = norm.pdf(x, fit_loc, fit_scale)
 
             # normalize
-            pdf_fitted = pdf_fitted # / pdf_fitted.max()
+            pdf_fitted = pdf_fitted  # / pdf_fitted.max()
 
-            # this is the maximum of the distribution
-            # mode = x[pdf_fitted.argmax()]
-            #
-            # import matplotlib.pyplot as plt
-            #
             plt.hist(dt, bins=15, normed=True)
             plt.plot(x, pdf_fitted, color='r')
             plt.show()
 
-
         return fit_loc, fit_scale
-
 
     def scan_desorption_threshold(self, thresh_min=3.5, thresh_max=6.5):
 
         for thresh in np.arange(thresh_min, thresh_max, 0.1):
-
             print(thresh, self.fit_gaussian(desorption_thresh=thresh))
 
         return None
 
+    def extract_enthalpy_entropy(self, heating_rate):
+        """
+
+        :param heating_rate: The heating rate in K fs-1
+        :return:
+        """
+
+        # raise NotImplementedError('not yet implemented')
+
+        loc, scale = self.fit_gaussian()
+
+        center = loc
+        fwhm = scale * 2.355
+
+        # Nelder-Mead is the only only which seems to work
+        optimized_values = minimize(error2, np.array([7, 0.05]),
+                                    args=(center, fwhm, heating_rate),
+                                    method='Nelder-Mead')
+
+        results = {'enthalpy:': optimized_values['x'][0],
+                  'entropy:': optimized_values['x'][1]}
+
+        return results
+
+
+def error2(parameters, target_max, target_fwhm, heating_rate):
+
+    enthalpy = parameters[0]
+
+    entropy = parameters[1]
+
+    tdp = tdpCurve.TpdCurve(enthalpy=enthalpy, entropy=entropy, heating_rate=heating_rate)
+
+    error = np.abs(target_max - tdp.max) + np.abs(target_fwhm - tdp.fwhm)
+
+    return error
+
 
 def process_all_trj():
-        """
-        parses all TRJ files in a directory and dump
-        the information into JSON files
+    """
+    parses all TRJ files in a directory and dump
+    the information into JSON files
 
-        """
+    """
 
-        for f in os.listdir('.'):
+    for f in os.listdir('.'):
 
-            if f.endswith('.trj'):
-
-                print('Parsing and dumping data from: {}'.format(f))
-                trjp = TrjProcessor(f)
-                trjp.dump_data()
+        if f.endswith('.trj'):
+            print('Parsing and dumping data from: {}'.format(f))
+            trjp = TrjProcessor(f)
+            trjp.dump_data()
 
 
 if __name__ == "__main__":
-
     di = DirectoryInformation()
-    # di.scan_desorption_threshold()
-    di.fit_gaussian(plot=True, desorption_thresh=5.5)
-
+    print(di.extract_enthalpy_entropy(heating_rate=0.0223))
+    # print(di.fit_gaussian(plot=True, desorption_thresh=5.5))
