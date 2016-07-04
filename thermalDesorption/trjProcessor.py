@@ -367,7 +367,7 @@ class DirectoryInformation:
 
     """
 
-    def __init__(self):
+    def __init__(self, directory='.'):
         """
         Initialize by getting all the information in the directory
 
@@ -377,13 +377,19 @@ class DirectoryInformation:
 
         print('reading data from all JSON files in directory')
 
-        for f in os.listdir('.'):
+        current_dir = os.getcwd()
+
+        os.chdir(directory)
+
+        for f in os.listdir(directory):
 
             if f.endswith('.json'):
                 self.info.append(JsonData(f))
 
         if not self.info:
             raise IOError('Did not find any valid json pared information')
+
+        os.chdir(current_dir)
 
     def get_desorption_distribution(self, thresh=5, plot=False, bins=15):
         """
@@ -517,13 +523,73 @@ class DirectoryInformation:
                                     method='Nelder-Mead')
 
         results = {'enthalpy:': optimized_values['x'][0],
-                  'entropy:': optimized_values['x'][1]}
+                   'entropy:': optimized_values['x'][1]}
 
         return results
 
 
-def error2(parameters, target_max, target_fwhm, heating_rate):
+def extract_enthalpy_entropy_two_info(guess_enthalpy,
+                                      guess_entropy,
+                                      data_dir_1,
+                                      data_dir_2,
+                                      heating_rate1,
+                                      heating_rate2,
+                                      desorption_thresh=5.5):
+    """
 
+    :param heating_rate: The heating rate in K fs-1
+    :return:
+    """
+
+    center1_target, scale1 = DirectoryInformation(data_dir_1).fit_gaussian(desorption_thresh=desorption_thresh)
+
+    center2_target, scale2 = DirectoryInformation(data_dir_2).fit_gaussian(desorption_thresh=desorption_thresh)
+
+    # Nelder-Mead is the only only which seems to work (?)
+    optimized_values = minimize(error_twoRates, np.array([guess_enthalpy, guess_entropy]),
+                                args=(center1_target,
+                                      center2_target,
+                                      heating_rate1,
+                                      heating_rate2),
+                                method='Nelder-Mead')
+
+    print(optimized_values)
+
+    exit()
+
+    results = {'enthalpy:': optimized_values['x'][0],
+               'entropy:': optimized_values['x'][1]}
+
+    return results
+
+
+def error_twoRates(parameters,
+                   center1_target,
+                   center2_target,
+                   heating_rate1,
+                   heating_rate2):
+    enthalpy = parameters[0]
+
+    entropy = parameters[1]
+
+    tdp1 = tdpCurve.TpdCurve(enthalpy=enthalpy,
+                             entropy=entropy,
+                             heating_rate=heating_rate1)
+
+    tdp2 = tdpCurve.TpdCurve(enthalpy=enthalpy,
+                             entropy=entropy,
+                             heating_rate=heating_rate2)
+
+    print(center1_target, tdp1.max, center2_target, tdp2.max, )
+
+    error = np.abs(center1_target - tdp1.max) + np.abs(center2_target - tdp2.max)
+
+    print(error)
+
+    return error
+
+
+def error2(parameters, target_max, target_fwhm, heating_rate):
     enthalpy = parameters[0]
 
     entropy = parameters[1]
@@ -551,6 +617,16 @@ def process_all_trj():
 
 
 if __name__ == "__main__":
-    di = DirectoryInformation()
-    print(di.extract_enthalpy_entropy(heating_rate=0.0223))
+    # di = DirectoryInformation()
+    # print(di.extract_enthalpy_entropy(heating_rate=0.0223))
     # print(di.fit_gaussian(plot=True, desorption_thresh=5.5))
+
+    things = extract_enthalpy_entropy_two_info(
+        guess_enthalpy=3,
+        guess_entropy=0.001,
+        data_dir_1='C:/Users/Udi-BRIX\Dropbox/abinitio\multi_h2\dynamics\production/tcatMg/tcatMg2H2',
+        data_dir_2='C:/Users/Udi-BRIX\Dropbox/abinitio\multi_h2\dynamics\production/tcatMg/tcatMg2H2_fast',
+        heating_rate1=0.0267,
+        heating_rate2=0.0267 * 5/2)
+
+    print(things)
