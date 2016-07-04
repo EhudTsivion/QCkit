@@ -33,7 +33,7 @@ class TpdGraphGenerator:
 
         pass
 
-    def gen_figure(self, desorption_thresh=5.5):
+    def gen_figure(self, fig_name='tpd_graph.png', desorption_thresh=5.5):
 
         if not self.source_dir_list:
             raise Exception('No information directory was provided')
@@ -92,7 +92,7 @@ class TpdGraphGenerator:
 
         # plt.show()
 
-        plt.savefig('tpd_graph.png', dpi=300, figsize=(3.33, 3), fontsize=14)
+        plt.savefig(fig_name, dpi=300, figsize=(3.33, 3), fontsize=14)
 
 
 if __name__ == "__main__":
