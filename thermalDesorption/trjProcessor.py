@@ -336,6 +336,8 @@ class JsonData:
 
         # find time of detachment
 
+        found = False
+
         time = None
 
         for distance in self.data['h2_metal_distance']:
@@ -344,15 +346,13 @@ class JsonData:
             for h2_molecule in distance:
 
                 if h2_molecule >= thresh:
-
-                    # there is probably a more efficent way of doing this
                     time = self.data['simulation_temperature'][counter]
-
-                else:
-
-                    time = None
+                    found = True
 
             counter += 1
+
+            if found:
+                break
 
         return time
 
