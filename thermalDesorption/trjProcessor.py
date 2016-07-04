@@ -336,8 +336,6 @@ class JsonData:
 
         # find time of detachment
 
-        found = False
-
         time = None
 
         for distance in self.data['h2_metal_distance']:
@@ -346,13 +344,15 @@ class JsonData:
             for h2_molecule in distance:
 
                 if h2_molecule >= thresh:
+
+                    # there is probably a more efficent way of doing this
                     time = self.data['simulation_temperature'][counter]
-                    found = True
+
+                else:
+
+                    time = None
 
             counter += 1
-
-            if found:
-                break
 
         return time
 
@@ -447,12 +447,6 @@ class DirectoryInformation:
         # this is the maximum of the distribution
         mode = x[pdf_fitted.argmax()]
 
-        # import matplotlib.pyplot as plt
-        #
-        # plt.hist(dt, bins=15)
-        # plt.plot(x, pdf_fitted, color='r')
-        # plt.show()
-
         values = mode, fit_alpha, fit_loc, fit_beta
 
         return values
@@ -541,21 +535,21 @@ def extract_enthalpy_entropy_two_info(guess_enthalpy,
     :return:
     """
 
-    center1_target, scale1 = DirectoryInformation(data_dir_1).fit_gaussian(desorption_thresh=desorption_thresh)
+    center1_target, width1_target = DirectoryInformation(data_dir_1).fit_gaussian(desorption_thresh=desorption_thresh)
 
-    center2_target, scale2 = DirectoryInformation(data_dir_2).fit_gaussian(desorption_thresh=desorption_thresh)
+    center2_target, width2_target = DirectoryInformation(data_dir_2).fit_gaussian(desorption_thresh=desorption_thresh)
 
     # Nelder-Mead is the only only which seems to work (?)
     optimized_values = minimize(error_twoRates, np.array([guess_enthalpy, guess_entropy]),
                                 args=(center1_target,
                                       center2_target,
+                                      width1_target * 2.355,  # convert width to FWHM
+                                      width2_target * 2.355,  # convert width to FWHM
                                       heating_rate1,
                                       heating_rate2),
-                                method='Nelder-Mead')
-
-    print(optimized_values)
-
-    exit()
+                                method='Nelder-Mead',
+                                tol=0.0005,
+                                options={'maxiter': 200})
 
     results = {'enthalpy:': optimized_values['x'][0],
                'entropy:': optimized_values['x'][1]}
@@ -566,8 +560,11 @@ def extract_enthalpy_entropy_two_info(guess_enthalpy,
 def error_twoRates(parameters,
                    center1_target,
                    center2_target,
+                   width1_target,
+                   width2_target,
                    heating_rate1,
                    heating_rate2):
+
     enthalpy = parameters[0]
 
     entropy = parameters[1]
@@ -580,7 +577,8 @@ def error_twoRates(parameters,
                              entropy=entropy,
                              heating_rate=heating_rate2)
 
-    print(center1_target, tdp1.max, center2_target, tdp2.max, )
+    print('center: ', center1_target, tdp1.max, center2_target, tdp2.max, )
+    print('width: ', width1_target, tdp1.fwhm, width2_target, tdp2.fwhm, )
 
     error = np.abs(center1_target - tdp1.max) + np.abs(center2_target - tdp2.max)
 
@@ -617,16 +615,11 @@ def process_all_trj():
 
 
 if __name__ == "__main__":
-    # di = DirectoryInformation()
-    # print(di.extract_enthalpy_entropy(heating_rate=0.0223))
-    # print(di.fit_gaussian(plot=True, desorption_thresh=5.5))
+    thresh = 10
 
-    things = extract_enthalpy_entropy_two_info(
-        guess_enthalpy=3,
-        guess_entropy=0.001,
-        data_dir_1='C:/Users/Udi-BRIX\Dropbox/abinitio\multi_h2\dynamics\production/tcatMg/tcatMg2H2',
-        data_dir_2='C:/Users/Udi-BRIX\Dropbox/abinitio\multi_h2\dynamics\production/tcatMg/tcatMg2H2_fast',
-        heating_rate1=0.0267,
-        heating_rate2=0.0267 * 5/2)
+    di = DirectoryInformation('C:/Users/Udi-BRIX\Dropbox/abinitio\multi_h2\dynamics\production/tcatMg/tcatMg2H2')
+    print(di.fit_gaussian(plot=True, desorption_thresh=thresh))
 
-    print(things)
+    di = DirectoryInformation(
+        'C:/Users/Udi-BRIX\Dropbox/abinitio\multi_h2\dynamics\production/tcatMg/tcatMg2H2_cont')
+    print(di.fit_gaussian(plot=True, desorption_thresh=thresh))
