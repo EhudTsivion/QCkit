@@ -356,6 +356,14 @@ class JsonData:
 
         return time
 
+    def get_max_temp(self):
+        """
+
+        :return: return the maximal temperature that the simulation has reached
+        """
+
+        return self.data['simulation_temperature'][-1]
+
 
 class DirectoryInformation:
     """
@@ -425,10 +433,44 @@ class DirectoryInformation:
 
         return detachment_temperatures
 
-    def fit_gamma_distribution(self, thresh=5):
+    def analyze_traj_max_time(self, hist_bins=15, plot=True):
+        """
+        Obtain the temperatures at which the molecules have desorbed
+        from the metal center, by moving farther than a certain threshold
+        distance.
+
+        You can optionally plot a histogram of the distribution
+
+        :param thresh:
+        :param plot:
+        :param bins:
+        :return:
+        """
+
+        # the maximal temperature achieved by all trjectories
+        max_temperatures = list()
+
+        for trj_info in self.info:
+
+            max_temp = trj_info.get_max_temp()
+
+            max_temperatures.append(max_temp)
+
+        max_temperatures = np.array(max_temperatures, dtype=np.float)
+
+        if plot:
+            plt.hist(max_temperatures,
+                     range=(0, max_temperatures.max()),
+                     bins=hist_bins)
+
+            plt.show()
+
+        return max_temperatures
+
+    def fit_gamma_distribution(self, desorption_thresh=5, plot=False, bins=15, normed=True):
 
         #  first get the detachment time
-        dt = self.get_desorption_distribution(thresh=thresh)
+        dt = self.get_desorption_distribution(thresh=desorption_thresh)
 
         # you need to invert the data - to be able to fit gamma
         # dt = dt.max() - dt
@@ -437,19 +479,22 @@ class DirectoryInformation:
 
         x = np.linspace(0, dt.max(), 100)
 
-        param = gamma.fit(dt)
-
-        pdf_fitted = gamma.pdf(x, *param)
+        pdf_fitted = gamma.pdf(x, fit_alpha, fit_loc, fit_beta)
 
         # normalize
-        pdf_fitted = pdf_fitted / pdf_fitted.max()
+        # pdf_fitted = pdf_fitted / pdf_fitted.max()
 
         # this is the maximum of the distribution
         mode = x[pdf_fitted.argmax()]
 
-        values = mode, fit_alpha, fit_loc, fit_beta
+        if plot:
+            x = np.linspace(0, dt.max(), 100)
 
-        return values
+            plt.hist(dt, bins=bins, normed=normed)
+            plt.plot(x, pdf_fitted)
+            plt.show()
+
+        return fit_alpha, fit_loc, fit_beta
 
     def test_all_gamma(self, thresh_min=3.5, thresh_max=6.5):
 
@@ -458,7 +503,7 @@ class DirectoryInformation:
 
         return None
 
-    def fit_gaussian(self, desorption_thresh=5, plot=False, bins=15):
+    def fit_normal_distribution(self, desorption_thresh=5, plot=False, bins=15, normed=True):
         """
         Fit a normal distribution to the results
 
@@ -468,6 +513,7 @@ class DirectoryInformation:
         hydrogen molecule from which the molecule is considered as desorbed
         :parameter plot: a flag to turn on or off the plotting of the results
         :parameter bins: the number of bins used to plot the histogram
+        :parameter normed: whether to normalize the results
         :return:
         """
 
@@ -484,7 +530,7 @@ class DirectoryInformation:
             # normalize
             pdf_fitted = pdf_fitted  # / pdf_fitted.max()
 
-            plt.hist(dt, bins=15, normed=True)
+            plt.hist(dt, bins=bins, normed=normed)
             plt.plot(x, pdf_fitted, color='r')
             plt.show()
 
@@ -493,31 +539,37 @@ class DirectoryInformation:
     def scan_desorption_threshold(self, thresh_min=3.5, thresh_max=6.5):
 
         for thresh in np.arange(thresh_min, thresh_max, 0.1):
-            print(thresh, self.fit_gaussian(desorption_thresh=thresh))
+            print(thresh, self.fit_normal_distribution(desorption_thresh=thresh))
 
         return None
 
-    def extract_enthalpy_entropy(self, heating_rate):
+    def extract_enthalpy_entropy(self,
+                                 guess_enthalpy,
+                                 guess_entropy,
+                                 heating_rate,
+                                 desorption_thresh=5.5):
         """
 
         :param heating_rate: The heating rate in K fs-1
+        :param guess_enthalpy:
+        :param desorption_thresh:
+        :param guess_entropy:
         :return:
         """
 
-        # raise NotImplementedError('not yet implemented')
-
-        loc, scale = self.fit_gaussian()
+        loc, scale = self.fit_normal_distribution(desorption_thresh=desorption_thresh)
 
         center = loc
         fwhm = scale * 2.355
 
         # Nelder-Mead is the only only which seems to work
-        optimized_values = minimize(error2, np.array([7, 0.05]),
+        optimized_values = minimize(error2, np.array([guess_enthalpy, guess_entropy]),
                                     args=(center, fwhm, heating_rate),
                                     method='Nelder-Mead')
 
-        results = {'enthalpy:': optimized_values['x'][0],
-                   'entropy:': optimized_values['x'][1]}
+        results = {'enthalpy': optimized_values['x'][0],
+                   'entropy': optimized_values['x'][1],
+                   'error': optimized_values['fun']}
 
         return results
 
@@ -535,9 +587,11 @@ def extract_enthalpy_entropy_two_info(guess_enthalpy,
     :return:
     """
 
-    center1_target, width1_target = DirectoryInformation(data_dir_1).fit_gaussian(desorption_thresh=desorption_thresh)
+    center1_target, width1_target = DirectoryInformation(data_dir_1).fit_normal_distribution(
+        desorption_thresh=desorption_thresh)
 
-    center2_target, width2_target = DirectoryInformation(data_dir_2).fit_gaussian(desorption_thresh=desorption_thresh)
+    center2_target, width2_target = DirectoryInformation(data_dir_2).fit_normal_distribution(
+        desorption_thresh=desorption_thresh)
 
     # Nelder-Mead is the only only which seems to work (?)
     optimized_values = minimize(error_twoRates, np.array([guess_enthalpy, guess_entropy]),
@@ -551,8 +605,24 @@ def extract_enthalpy_entropy_two_info(guess_enthalpy,
                                 tol=0.0005,
                                 options={'maxiter': 200})
 
-    results = {'enthalpy:': optimized_values['x'][0],
-               'entropy:': optimized_values['x'][1]}
+    results = {'enthalpy': optimized_values['x'][0],
+               'entropy': optimized_values['x'][1],
+               'error': optimized_values['fun'],
+               'success': optimized_values['success']}
+
+    if not results['success']:
+        raise Exception('Fitting procedure failed')
+
+    opt_center1 = tdpCurve.TpdCurve(enthalpy_atRoomT=results['enthalpy'],
+                                    entropy=results['entropy'],
+                                    heating_rate=heating_rate1).max
+
+    opt_center2 = tdpCurve.TpdCurve(enthalpy_atRoomT=results['enthalpy'],
+                                    entropy=results['entropy'],
+                                    heating_rate=heating_rate2).max
+
+    print('Center of slow heating curve is: {:0.0f}, optimized {:0.0f}'.format(center1_target, opt_center1))
+    print('Center of fast heating curve is: {:0.0f}, optimized {:0.0f}'.format(center2_target, opt_center2))
 
     return results
 
@@ -564,25 +634,21 @@ def error_twoRates(parameters,
                    width2_target,
                    heating_rate1,
                    heating_rate2):
-
     enthalpy = parameters[0]
 
     entropy = parameters[1]
 
-    tdp1 = tdpCurve.TpdCurve(enthalpy=enthalpy,
+    tdp1 = tdpCurve.TpdCurve(enthalpy_atRoomT=enthalpy,
                              entropy=entropy,
                              heating_rate=heating_rate1)
 
-    tdp2 = tdpCurve.TpdCurve(enthalpy=enthalpy,
+    tdp2 = tdpCurve.TpdCurve(enthalpy_atRoomT=enthalpy,
                              entropy=entropy,
                              heating_rate=heating_rate2)
 
-    print('center: ', center1_target, tdp1.max, center2_target, tdp2.max, )
-    print('width: ', width1_target, tdp1.fwhm, width2_target, tdp2.fwhm, )
+    print(tdp1.fwhm)
 
     error = np.abs(center1_target - tdp1.max) + np.abs(center2_target - tdp2.max)
-
-    print(error)
 
     return error
 
@@ -592,7 +658,7 @@ def error2(parameters, target_max, target_fwhm, heating_rate):
 
     entropy = parameters[1]
 
-    tdp = tdpCurve.TpdCurve(enthalpy=enthalpy, entropy=entropy, heating_rate=heating_rate)
+    tdp = tdpCurve.TpdCurve(enthalpy_atRoomT=enthalpy, entropy=entropy, heating_rate=heating_rate)
 
     error = np.abs(target_max - tdp.max) + np.abs(target_fwhm - tdp.fwhm)
 
@@ -618,8 +684,8 @@ if __name__ == "__main__":
     thresh = 10
 
     di = DirectoryInformation('C:/Users/Udi-BRIX\Dropbox/abinitio\multi_h2\dynamics\production/tcatMg/tcatMg2H2')
-    print(di.fit_gaussian(plot=True, desorption_thresh=thresh))
+    print(di.fit_normal_distribution(plot=True, desorption_thresh=thresh))
 
     di = DirectoryInformation(
         'C:/Users/Udi-BRIX\Dropbox/abinitio\multi_h2\dynamics\production/tcatMg/tcatMg2H2_cont')
-    print(di.fit_gaussian(plot=True, desorption_thresh=thresh))
+    print(di.fit_normal_distribution(plot=True, desorption_thresh=thresh))
