@@ -8,8 +8,11 @@ desorbed.
 """
 
 di = trjProcessor.DirectoryInformation(
-    'C:/Users/Udi-BRIX\Dropbox/abinitio\multi_h2\dynamics\production/tcatMg/tcatMg2H2_strong_friction')
+    'C:/Users/Udi-BRIX\Dropbox/abinitio\multi_h2\dynamics\production/tcatMg/tcatMg2H2_weaker2_friction')
 
 # this returns the loc and scale of the normal distribution
-curve = di.fit_gaussian(plot=True, desorption_thresh=5.5)
-print(curve)
+curve_fit = di.fit_normal_distribution(plot=True,
+                                   desorption_thresh=6.50,
+                                   bins=30,
+                                   normed=True)
+print(curve_fit)

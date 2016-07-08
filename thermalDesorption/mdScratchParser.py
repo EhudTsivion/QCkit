@@ -92,19 +92,38 @@ class MdScratchParser:
 
         return trj_data
 
-        # # create T and V file
-        # with open(self.aimd_scratch + "/TandV", 'r') as f:
-        #     tandv_data = f.read().splitlines()
-        #
-        # # in case of not first write, remove first line
-        # if not first_step:
-        #     tandv_data.pop(0)
-        #
-        # tandv_data = ' '.join(tandv_data) + '\n'
-        #
-        # with open(self.job_name + ".TandV", 'a') as f:
-        #     f.write('Target Temperature {} K\n'.format(temp))
-        #     f.write(str(tandv_data))
+    @property
+    def get_temp_and_potential(self):
+        """
+        collect data from aimd scratch and create trj file
+
+        """
+
+        results = {'time': list(),
+                   'potentialE': list(),
+                   'temperature': list()}
+
+        # create trajectory file
+        with open(self.aimd_scratch + "/TandV", 'r') as f:
+            tandv_data = str(f.read())
+
+        # remove header line
+        tandv_data = tandv_data.splitlines()
+        tandv_data.pop(0)
+
+        for line in tandv_data:
+
+            line = line.split()
+
+            results['time'].append(float(line[0]))
+            results['potentialE'].append(float(line[1]))
+            results['temperature'].append(float(line[2]))
+
+        results['time'] = np.array(results['time'], dtype=np.float)
+        results['potentialE'] = np.array(results['potentialE'], dtype=np.float)
+        results['temperature'] = np.array(results['temperature'], dtype=np.float)
+
+        return results
 
     @property
     def finished_ok(self):

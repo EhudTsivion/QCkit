@@ -29,6 +29,25 @@ class OutputParser:
         return "\n".join(temp_list) + "\n"
 
     @property
+    def potential_list(self):
+
+        """
+        extract the potential energy from each md simulation step
+        It's in Kelvins
+
+        :return:
+        """
+
+        temp_list = []
+
+        for line in self.content:
+
+            if "Instantaneous Temperature" in line:
+                temp_list.append(str(line.split()[-2]))
+
+        return "\n".join(temp_list) + "\n"
+
+    @property
     def job_failed(self):
 
         """

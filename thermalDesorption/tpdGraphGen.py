@@ -15,7 +15,9 @@ class TpdGraphGenerator:
 
         self.source_dir_list = list()
 
-    def add_source_dir(self, dir_name):
+        self.label_list = list()
+
+    def add_source_dir(self, dir_name, label='label'):
         """
         Add an information source for generating the graphs
         the source is a directory which contains JSON data files
@@ -26,6 +28,8 @@ class TpdGraphGenerator:
         if os.path.isdir(dir_name):
 
             self.source_dir_list.append(dir_name)
+
+            self.label_list.append(label)
 
         else:
 
@@ -80,9 +84,11 @@ class TpdGraphGenerator:
                                   fit_loc_array[counter],
                                   fit_scale_array[counter])
 
-            counter += 1
+            label = self.label_list[counter]
 
-            plt.fill(temp_axis, pdf_fitted, alpha=0.6)
+            plt.fill(temp_axis, pdf_fitted, alpha=0.6, label=label)
+
+            counter += 1
 
             # plt.hist(info, bins=15, normed=True, alpha=0.3)
 
@@ -90,7 +96,7 @@ class TpdGraphGenerator:
 
         plt.yticks(np.linspace(0, plt.axes().get_ylim()[1], 3))
 
-        # plt.show()
+        plt.legend(loc='best', fontsize=16)
 
         plt.savefig(fig_name, dpi=300, figsize=(3.33, 3), fontsize=14)
 
@@ -101,9 +107,9 @@ if __name__ == "__main__":
     rcParams.update({'font.size': 22, 'xtick.major.size': 10})
 
     graphs.add_source_dir(
-        'C:/Users/Udi-BRIX/Dropbox/abinitio/multi_h2/dynamics/production/tcatMg/tcatMg2H2_good_results')
+        'C:/Users/Udi-BRIX/Dropbox/abinitio/multi_h2/dynamics/production/tcatMg/tcatMg2H2_good_results', label='23 mK/fs')
 
     graphs.add_source_dir(
-        'C:/Users/Udi-BRIX/Dropbox/abinitio/multi_h2/dynamics/production/tcatMg/tcatMg1H2')
+        'C:/Users/Udi-BRIX/Dropbox/abinitio/multi_h2/dynamics/production/tcatMg/tcatMg1H2', label='5 mK/fs')
 
     graphs.gen_figure()

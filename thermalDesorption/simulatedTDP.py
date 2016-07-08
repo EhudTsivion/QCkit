@@ -59,7 +59,7 @@ class TPD:
             if not restart:
                 # always append a random number, because several
                 # jobs with same name can run in parallel
-                self.tpd_job_name = '{}-{}'.format(tpd_job_name, str(random.randint(10000, 99999)))
+                self.tpd_job_name = '{}-{}'.format(tpd_job_name, str(random.randint(1000000, 9999999)))
 
             else:
                 # all output is appended
